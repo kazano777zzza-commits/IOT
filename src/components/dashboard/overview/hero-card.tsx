@@ -67,7 +67,7 @@ function HeroCard({ data }: HeroCardProps) {
   );
 }
 
-HeroCard.Skeleton = function HeroCardSkeleton() {
+function HeroCardSkeleton() {
   return (
     <Card className="lg:col-span-2">
       <CardHeader>
@@ -87,5 +87,7 @@ HeroCard.Skeleton = function HeroCardSkeleton() {
     </Card>
   );
 }
+
+HeroCard.Skeleton = HeroCardSkeleton;
 
 export default HeroCard;

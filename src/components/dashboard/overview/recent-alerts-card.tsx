@@ -102,7 +102,7 @@ function RecentAlertsCard({ data }: RecentAlertsCardProps) {
   );
 }
 
-RecentAlertsCard.Skeleton = function RecentAlertsCardSkeleton() {
+function RecentAlertsCardSkeleton() {
     return (
         <Card>
             <CardHeader>
@@ -117,5 +117,7 @@ RecentAlertsCard.Skeleton = function RecentAlertsCardSkeleton() {
         </Card>
     )
 }
+
+RecentAlertsCard.Skeleton = RecentAlertsCardSkeleton;
 
 export default RecentAlertsCard;

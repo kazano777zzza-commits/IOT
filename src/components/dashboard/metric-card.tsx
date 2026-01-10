@@ -56,7 +56,7 @@ function MetricCard({ data, config }: MetricCardProps) {
   );
 }
 
-MetricCard.Skeleton = function MetricCardSkeleton() {
+function MetricCardSkeleton() {
     return (
         <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -75,6 +75,8 @@ MetricCard.Skeleton = function MetricCardSkeleton() {
         </Card>
     )
 }
+
+MetricCard.Skeleton = MetricCardSkeleton;
 
 
 export default MetricCard;
