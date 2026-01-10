@@ -4,7 +4,6 @@ import * as React from 'react';
 import Header from '@/components/layout/header';
 import Sidebar from '@/components/layout/sidebar';
 import MobileBottomNav from '@/components/layout/mobile-bottom-nav';
-import { SidebarProvider } from '@/components/ui/sidebar';
 
 export default function DashboardLayout({
   children,
@@ -12,15 +11,15 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   return (
-    <SidebarProvider>
-      <div className="min-h-screen">
-        <Sidebar />
-        <main className="transition-all duration-300 md:pl-[5.5rem]">
-           <Header />
-           <div className="p-4 lg:p-6">{children}</div>
+    <div className="min-h-screen bg-muted/30">
+      <Sidebar />
+      <div className="md:ml-16">
+        <Header />
+        <main className="p-4 lg:p-6 pb-20 md:pb-6">
+          {children}
         </main>
-        <MobileBottomNav />
       </div>
-    </SidebarProvider>
+      <MobileBottomNav />
+    </div>
   );
 }

@@ -7,10 +7,23 @@ import { Skeleton } from "@/components/ui/skeleton";
 import Sparkline from "@/components/charts/sparkline";
 import { useEffect, useState } from "react";
 import * as Icons from "lucide-react";
+import { cn } from "@/lib/utils";
 
 type MetricCardProps = {
   data: CurrentSensorData;
   config: Omit<Sensor, 'Icon'> & { iconName: keyof typeof Icons };
+};
+
+const statusGradients = {
+  'Tốt': 'from-green-500/10 to-transparent',
+  'Trung bình': 'from-yellow-500/10 to-transparent',
+  'Nguy hiểm': 'from-red-500/10 to-transparent',
+};
+
+const statusIconColors = {
+  'Tốt': 'text-green-500',
+  'Trung bình': 'text-yellow-500',
+  'Nguy hiểm': 'text-red-500',
 };
 
 function MetricCard({ data, config }: MetricCardProps) {
@@ -31,23 +44,31 @@ function MetricCard({ data, config }: MetricCardProps) {
   }, [data.value]);
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+    <Card className="group relative overflow-hidden hover:shadow-lg hover:shadow-primary/5 transition-all duration-300 hover:-translate-y-0.5">
+      <div className={cn(
+        "absolute inset-0 bg-gradient-to-br opacity-0 group-hover:opacity-100 transition-opacity duration-300",
+        statusGradients[data.status]
+      )} />
+      <CardHeader className="relative flex flex-row items-center justify-between space-y-0 pb-2">
         <CardTitle className="text-sm font-medium flex items-center gap-2">
-          <Icon className="h-4 w-4 text-muted-foreground" />
+          <div className={cn(
+            "p-1.5 rounded-lg bg-muted/50 group-hover:bg-muted transition-colors",
+          )}>
+            <Icon className={cn("h-4 w-4 transition-colors", statusIconColors[data.status])} />
+          </div>
           {config.name}
         </CardTitle>
         <StatusBadge status={data.status} />
       </CardHeader>
-      <CardContent>
+      <CardContent className="relative">
         <div className="flex items-end justify-between gap-4">
             <div className="space-y-1">
-                <div className="text-4xl font-bold">{data.value.toLocaleString('vi-VN')}</div>
+                <div className="text-4xl font-bold tracking-tight">{data.value.toLocaleString('vi-VN')}</div>
                 <p className="text-xs text-muted-foreground">
-                    Ngưỡng cao: {config.thresholds.high}{config.unit}
+                    Ngưỡng cao: <span className="font-medium">{config.thresholds.high}{config.unit}</span>
                 </p>
             </div>
-            <div className="w-24 h-12">
+            <div className="w-24 h-12 opacity-80 group-hover:opacity-100 transition-opacity">
                 <Sparkline data={history} status={data.status} />
             </div>
         </div>
@@ -58,7 +79,7 @@ function MetricCard({ data, config }: MetricCardProps) {
 
 function MetricCardSkeleton() {
     return (
-        <Card>
+        <Card className="animate-pulse">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <Skeleton className="h-5 w-2/5" />
                 <Skeleton className="h-6 w-1/4" />

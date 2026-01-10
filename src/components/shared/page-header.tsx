@@ -14,11 +14,11 @@ export default function PageHeader({
   className,
 }: PageHeaderProps) {
   return (
-    <div className={cn("flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-6", className)}>
-      <div>
-        <h2 className="text-2xl font-bold tracking-tight">{title}</h2>
+    <div className={cn("flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-8", className)}>
+      <div className="space-y-1">
+        <h2 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text">{title}</h2>
         {description && (
-          <p className="text-muted-foreground">{description}</p>
+          <p className="text-muted-foreground text-base">{description}</p>
         )}
       </div>
       {actions && <div className="flex items-center gap-2">{actions}</div>}

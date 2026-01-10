@@ -6,83 +6,90 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import StatusBadge from "@/components/shared/status-badge";
 import type { CurrentSensorData, GeneratedAlert, SmartAlert } from "@/lib/types";
-import { generateAlertsAction } from "@/app/actions";
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatDistanceToNow } from 'date-fns';
 import { vi } from 'date-fns/locale';
-import { AlertCircle, Bell } from 'lucide-react';
+import { AlertCircle, Bell, CheckCircle2 } from 'lucide-react';
 
 type RecentAlertsCardProps = {
   data: CurrentSensorData[];
 };
 
+// Generate alerts based on sensor data without AI
+function generateLocalAlerts(data: CurrentSensorData[]): GeneratedAlert[] {
+  const alerts: GeneratedAlert[] = [];
+  
+  data.forEach(sensor => {
+    if (sensor.status === 'Nguy hiểm') {
+      alerts.push({
+        id: crypto.randomUUID(),
+        title: `${sensor.metric === 'temperature' ? 'Nhiệt độ' : 
+                 sensor.metric === 'humidity' ? 'Độ ẩm' :
+                 sensor.metric === 'light' ? 'Ánh sáng' :
+                 sensor.metric === 'noise' ? 'Tiếng ồn' :
+                 sensor.metric === 'airQuality' ? 'Chất lượng không khí' :
+                 'Khí gas/khói'} vượt ngưỡng`,
+        message: `Giá trị hiện tại: ${sensor.value}. Cần kiểm tra ngay.`,
+        severity: 'Nguy hiểm',
+        timestamp: new Date(),
+      });
+    } else if (sensor.status === 'Trung bình') {
+      alerts.push({
+        id: crypto.randomUUID(),
+        title: `${sensor.metric === 'temperature' ? 'Nhiệt độ' : 
+                 sensor.metric === 'humidity' ? 'Độ ẩm' :
+                 sensor.metric === 'light' ? 'Ánh sáng' :
+                 sensor.metric === 'noise' ? 'Tiếng ồn' :
+                 sensor.metric === 'airQuality' ? 'Chất lượng không khí' :
+                 'Khí gas/khói'} cần chú ý`,
+        message: `Giá trị hiện tại: ${sensor.value}. Nên theo dõi thêm.`,
+        severity: 'Trung bình',
+        timestamp: new Date(),
+      });
+    }
+  });
+  
+  return alerts;
+}
+
 function RecentAlertsCard({ data }: RecentAlertsCardProps) {
   const [alerts, setAlerts] = React.useState<GeneratedAlert[]>([]);
-  const [loading, setLoading] = React.useState(true);
 
   React.useEffect(() => {
-    const fetchAlerts = async () => {
-      setLoading(true);
-      try {
-        const smartAlerts: SmartAlert[] = await generateAlertsAction(data);
-        const newAlerts: GeneratedAlert[] = smartAlerts.map(alert => ({
-          ...alert,
-          id: crypto.randomUUID(),
-          timestamp: new Date(),
-        }));
-        setAlerts(prevAlerts => {
-          const allAlerts = [...newAlerts, ...prevAlerts];
-          // Simple deduplication based on title and severity
-          const uniqueAlerts = allAlerts.reduce((acc, current) => {
-            if (!acc.find(item => item.title === current.title && item.severity === current.severity)) {
-              acc.push(current);
-            }
-            return acc;
-          }, [] as GeneratedAlert[]);
-          return uniqueAlerts.slice(0, 10);
-        });
-      } catch (error) {
-        console.error("Failed to fetch smart alerts:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchAlerts();
-    const interval = setInterval(fetchAlerts, 30000); // Check for new alerts every 30 seconds
-
-    return () => clearInterval(interval);
+    const localAlerts = generateLocalAlerts(data);
+    setAlerts(localAlerts);
   }, [data]);
 
-
   return (
-    <Card>
+    <Card className="group hover:shadow-lg hover:shadow-primary/5 transition-all duration-300">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <Bell />
+          <div className="p-1.5 rounded-lg bg-primary/10">
+            <Bell className="h-4 w-4 text-primary" />
+          </div>
           Cảnh báo gần đây
         </CardTitle>
         <CardDescription>
-          Các cảnh báo thông minh do AI tạo ra dựa trên dữ liệu cảm biến.
+          Cảnh báo tự động dựa trên ngưỡng cảm biến.
         </CardDescription>
       </CardHeader>
       <CardContent>
         <ScrollArea className="h-64">
-          {loading && alerts.length === 0 ? (
-            <div className="space-y-4 pr-4">
-              {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-16 w-full" />)}
-            </div>
-          ) : alerts.length > 0 ? (
-            <div className="space-y-4 pr-4">
-              {alerts.map((alert) => (
-                <div key={alert.id} className="flex items-start gap-3">
-                  <div className="mt-1">
+          {alerts.length > 0 ? (
+            <div className="space-y-3 pr-4">
+              {alerts.map((alert, index) => (
+                <div 
+                  key={alert.id} 
+                  className="flex items-start gap-3 p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors border border-transparent hover:border-border"
+                  style={{ animationDelay: `${index * 100}ms` }}
+                >
+                  <div className="mt-0.5">
                     <StatusBadge status={alert.severity} iconOnly />
                   </div>
-                  <div className="flex-1">
-                    <p className="font-semibold">{alert.title}</p>
-                    <p className="text-sm text-muted-foreground">{alert.message}</p>
-                    <p className="text-xs text-muted-foreground mt-1">
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-sm truncate">{alert.title}</p>
+                    <p className="text-sm text-muted-foreground line-clamp-2">{alert.message}</p>
+                    <p className="text-xs text-muted-foreground/70 mt-1.5">
                       {formatDistanceToNow(alert.timestamp, { addSuffix: true, locale: vi })}
                     </p>
                   </div>
@@ -90,10 +97,12 @@ function RecentAlertsCard({ data }: RecentAlertsCardProps) {
               ))}
             </div>
           ) : (
-            <div className="flex flex-col items-center justify-center h-full text-center">
-                <AlertCircle className="w-12 h-12 text-muted-foreground/50" />
-                <p className="mt-4 text-muted-foreground">Chưa có cảnh báo nào.</p>
-                <p className="text-sm text-muted-foreground/80">Mọi thứ đều đang ổn định.</p>
+            <div className="flex flex-col items-center justify-center h-full text-center py-8">
+                <div className="p-4 rounded-full bg-green-500/10 mb-4">
+                  <CheckCircle2 className="w-8 h-8 text-green-500" />
+                </div>
+                <p className="font-medium text-foreground">Chưa có cảnh báo nào.</p>
+                <p className="text-sm text-muted-foreground mt-1">Mọi thứ đều đang ổn định.</p>
             </div>
           )}
         </ScrollArea>
@@ -104,15 +113,15 @@ function RecentAlertsCard({ data }: RecentAlertsCardProps) {
 
 function RecentAlertsCardSkeleton() {
     return (
-        <Card>
+        <Card className="animate-pulse">
             <CardHeader>
                 <Skeleton className="h-6 w-1/2" />
                 <Skeleton className="h-4 w-3/4 mt-2" />
             </CardHeader>
-            <CardContent className="space-y-4">
-                <Skeleton className="h-16 w-full" />
-                <Skeleton className="h-16 w-full" />
-                <Skeleton className="h-16 w-full" />
+            <CardContent className="space-y-3">
+                <Skeleton className="h-20 w-full rounded-lg" />
+                <Skeleton className="h-20 w-full rounded-lg" />
+                <Skeleton className="h-20 w-full rounded-lg" />
             </CardContent>
         </Card>
     )
