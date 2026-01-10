@@ -7,9 +7,9 @@ type SparklineProps = {
 };
 
 const chartColors: Record<AlertSeverity, { stroke: string; fill: string }> = {
-  Tốt: { stroke: "hsl(var(--chart-1))", fill: "hsl(var(--chart-1)/0.2)" },
-  "Trung bình": { stroke: "hsl(var(--chart-3))", fill: "hsl(var(--chart-3)/0.2)" },
-  Nguy hiểm: { stroke: "hsl(var(--chart-5))", fill: "hsl(var(--chart-5)/0.2)" },
+  'Tốt': { stroke: "hsl(var(--chart-1))", fill: "hsl(var(--chart-1)/0.2)" },
+  'Trung bình': { stroke: "hsl(var(--chart-3))", fill: "hsl(var(--chart-3)/0.2)" },
+  'Nguy hiểm': { stroke: "hsl(var(--chart-5))", fill: "hsl(var(--chart-5)/0.2)" },
 };
 
 export default function Sparkline({ data, status }: SparklineProps) {

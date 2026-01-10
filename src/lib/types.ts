@@ -1,4 +1,5 @@
 import { type LucideIcon } from 'lucide-react';
+import type * as Icons from 'lucide-react';
 
 export type SensorMetric =
   | 'temperature'
@@ -15,6 +16,7 @@ export interface Sensor {
   name: string;
   unit: string;
   Icon: LucideIcon;
+  iconName: keyof typeof Icons;
   thresholds: {
     low: number | null;
     high: number;

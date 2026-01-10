@@ -6,14 +6,17 @@ import type { CurrentSensorData, Sensor } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
 import Sparkline from "@/components/charts/sparkline";
 import { useEffect, useState } from "react";
+import * as Icons from "lucide-react";
 
 type MetricCardProps = {
   data: CurrentSensorData;
-  config: Sensor;
+  config: Omit<Sensor, 'Icon'> & { iconName: keyof typeof Icons };
 };
 
 function MetricCard({ data, config }: MetricCardProps) {
   const [history, setHistory] = useState<number[]>([]);
+
+  const Icon = config.iconName in Icons ? Icons[config.iconName] as React.ElementType : Icons.HelpCircle;
 
   useEffect(() => {
     // Simulate historical data for sparkline
@@ -31,7 +34,7 @@ function MetricCard({ data, config }: MetricCardProps) {
     <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <CardTitle className="text-sm font-medium flex items-center gap-2">
-          <config.Icon className="h-4 w-4 text-muted-foreground" />
+          <Icon className="h-4 w-4 text-muted-foreground" />
           {config.name}
         </CardTitle>
         <StatusBadge status={data.status} />

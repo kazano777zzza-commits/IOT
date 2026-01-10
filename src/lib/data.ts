@@ -1,60 +1,51 @@
-import {
-  Thermometer,
-  Droplets,
-  Lightbulb,
-  Volume2,
-  Wind,
-  CloudSmoke,
-  type LucideIcon,
-} from 'lucide-react';
 import type { Sensor, CurrentSensorData, AlertSeverity } from './types';
 
-export const SENSORS: Sensor[] = [
+export const SENSORS: Omit<Sensor, 'Icon'>[] = [
   {
     id: 'temperature',
     name: 'Nhiệt độ',
     unit: '°C',
-    Icon: Thermometer,
+    iconName: 'Thermometer',
     thresholds: { low: 20, medium: 28, high: 32 },
   },
   {
     id: 'humidity',
     name: 'Độ ẩm',
     unit: '%',
-    Icon: Droplets,
+    iconName: 'Droplets',
     thresholds: { low: 40, medium: 70, high: 85 },
   },
   {
     id: 'light',
     name: 'Ánh sáng',
     unit: 'lux',
-    Icon: Lightbulb,
+    iconName: 'Lightbulb',
     thresholds: { low: 100, medium: 500, high: 1000 },
   },
   {
     id: 'noise',
     name: 'Tiếng ồn',
     unit: 'index',
-    Icon: Volume2,
+    iconName: 'Volume2',
     thresholds: { low: null, medium: 60, high: 80 },
   },
   {
     id: 'airQuality',
     name: 'Chỉ số khí (MQ-135)',
     unit: 'index',
-    Icon: Wind,
+    iconName: 'Wind',
     thresholds: { low: null, medium: 150, high: 250 },
   },
   {
     id: 'gasSmoke',
     name: 'Chỉ số gas/khói (MQ-2)',
     unit: 'index',
-    Icon: CloudSmoke,
+    iconName: 'Cloud',
     thresholds: { low: null, medium: 200, high: 300 },
   },
 ];
 
-const getStatus = (value: number, sensor: Sensor): AlertSeverity => {
+const getStatus = (value: number, sensor: Omit<Sensor, 'Icon'>): AlertSeverity => {
   if (value >= sensor.thresholds.high) {
     return 'Nguy hiểm';
   }
@@ -100,6 +91,6 @@ export const generateInitialData = (): CurrentSensorData[] => {
   });
 };
 
-export const getSensorConfig = (metric: string): Sensor | undefined => {
+export const getSensorConfig = (metric: string): Omit<Sensor, 'Icon'> | undefined => {
   return SENSORS.find((s) => s.id === metric);
 };
