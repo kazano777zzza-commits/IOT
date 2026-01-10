@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import Link, { type LinkProps } from "next/link"
+import Link from "next/link"
 import { Slot } from "@radix-ui/react-slot"
 import { cva, type VariantProps } from "class-variance-authority"
 import { PanelLeft } from "lucide-react"
@@ -171,11 +171,12 @@ const SidebarMenu = React.forwardRef<HTMLUListElement, React.ComponentProps<"ul"
 )
 SidebarMenu.displayName = "SidebarMenu"
 
-const SidebarMenuItem = React.forwardRef<HTMLLIElement, React.ComponentProps<"li">>(
-  ({ className, ...props }, ref) => (
-    <li ref={ref} className={cn("relative", className)} {...props} />
-  )
-)
+const SidebarMenuItem = React.forwardRef<
+  HTMLLIElement,
+  React.HTMLAttributes<HTMLLIElement>
+>(({ className, ...props }, ref) => {
+  return <li ref={ref} className={cn("relative", className)} {...props} />;
+});
 SidebarMenuItem.displayName = "SidebarMenuItem"
 
 const sidebarMenuButtonVariants = cva(
@@ -187,8 +188,8 @@ const sidebarMenuButtonVariants = cva(
 )
 
 type SidebarMenuButtonProps = (
-  | (React.ComponentProps<"button"> & { href?: never })
-  | (LinkProps & { href: LinkProps["href"] } & React.RefAttributes<HTMLAnchorElement>)
+  React.ButtonHTMLAttributes<HTMLButtonElement> & { asChild?: false } |
+  (React.ComponentProps<typeof Link> & { asChild: true })
 ) & {
   isActive?: boolean
   tooltip?: string | React.ComponentProps<typeof TooltipContent>
@@ -196,20 +197,19 @@ type SidebarMenuButtonProps = (
 
 
 const SidebarMenuButton = React.forwardRef<
-  HTMLButtonElement | HTMLAnchorElement,
+  HTMLButtonElement,
   SidebarMenuButtonProps
->(({ isActive = false, tooltip, className, href, ...props }, ref) => {
-  const Comp = href ? Link : "button"
+>(({ asChild, isActive = false, tooltip, className, ...props }, ref) => {
   const { state, isMobile } = useSidebar()
   const showTooltip = state === "collapsed" && !isMobile
+  
+  const Comp = asChild ? Slot : "button"
 
   const button = (
-    // @ts-expect-error - Comp can be a Link or a button
     <Comp
       ref={ref}
       data-active={isActive}
       className={cn(sidebarMenuButtonVariants(), className)}
-      href={href!}
       {...props}
     />
   )
