@@ -2,7 +2,6 @@
 
 import * as React from 'react';
 import { usePathname } from 'next/navigation';
-import Link from 'next/link';
 import {
   LayoutDashboard,
   Timer,
@@ -19,7 +18,6 @@ import {
   SidebarFooter,
 } from '@/components/ui/sidebar';
 import { useSidebar } from '@/components/ui/sidebar';
-import { Button } from '../ui/button';
 import { SettingsModal } from '../settings-modal';
 
 const navItems = [
@@ -44,21 +42,17 @@ export default function Sidebar() {
         <SidebarMenu className="flex-grow">
           {navItems.map((item) => (
             <SidebarMenuItem key={item.href}>
-              <Link href={item.href} passHref legacyBehavior>
-                <SidebarMenuButton
-                  asChild
-                  isActive={pathname === item.href}
-                  tooltip={{
-                    children: item.label,
-                    className: 'bg-primary text-primary-foreground',
-                  }}
-                >
-                  <a>
-                    <item.icon />
-                    <span>{item.label}</span>
-                  </a>
-                </SidebarMenuButton>
-              </Link>
+              <SidebarMenuButton
+                href={item.href}
+                isActive={pathname === item.href}
+                tooltip={{
+                  children: item.label,
+                  className: 'bg-primary text-primary-foreground',
+                }}
+              >
+                <item.icon />
+                <span>{item.label}</span>
+              </SidebarMenuButton>
             </SidebarMenuItem>
           ))}
         </SidebarMenu>

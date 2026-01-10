@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import Link, { type LinkProps } from "next/link"
 import { Slot } from "@radix-ui/react-slot"
 import { cva, type VariantProps } from "class-variance-authority"
 import { PanelLeft } from "lucide-react"
@@ -185,23 +186,30 @@ const sidebarMenuButtonVariants = cva(
   }
 )
 
+type SidebarMenuButtonProps = (
+  | (React.ComponentProps<"button"> & { href?: never })
+  | (LinkProps & { href: LinkProps["href"] } & React.RefAttributes<HTMLAnchorElement>)
+) & {
+  isActive?: boolean
+  tooltip?: string | React.ComponentProps<typeof TooltipContent>
+} & VariantProps<typeof sidebarMenuButtonVariants>
+
+
 const SidebarMenuButton = React.forwardRef<
-  HTMLButtonElement,
-  React.ComponentProps<"button"> & {
-    asChild?: boolean
-    isActive?: boolean
-    tooltip?: string | React.ComponentProps<typeof TooltipContent>
-  } & VariantProps<typeof sidebarMenuButtonVariants>
->(({ asChild = false, isActive = false, tooltip, className, ...props }, ref) => {
-  const Comp = asChild ? Slot : "button"
+  HTMLButtonElement | HTMLAnchorElement,
+  SidebarMenuButtonProps
+>(({ isActive = false, tooltip, className, href, ...props }, ref) => {
+  const Comp = href ? Link : "button"
   const { state, isMobile } = useSidebar()
   const showTooltip = state === "collapsed" && !isMobile
 
   const button = (
+    // @ts-expect-error - Comp can be a Link or a button
     <Comp
       ref={ref}
       data-active={isActive}
       className={cn(sidebarMenuButtonVariants(), className)}
+      href={href!}
       {...props}
     />
   )
