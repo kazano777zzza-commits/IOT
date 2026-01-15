@@ -111,7 +111,7 @@ export default function LandingPage() {
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-600 to-cyan-500 flex items-center justify-center">
               <Zap className="w-5 h-5 text-white" />
             </div>
-            <span className="font-bold text-slate-900 dark:text-white">IoT Monitor</span>
+            <span className="font-bold text-slate-900 dark:text-white">NamDuong IoT</span>
           </Link>
           <div className="flex items-center gap-6">
             <a href="#features" className="text-slate-600 dark:text-slate-400 hover:text-purple-600 dark:hover:text-purple-300 transition">Solutions</a>
@@ -392,7 +392,7 @@ export default function LandingPage() {
       </section>
 
       {/* Footer */}
-      <footer className="bg-slate-950 border-t border-purple-600/30 py-12">
+      <footer className="bg-white dark:bg-slate-950 border-t border-slate-200 dark:border-purple-600/30 py-12 transition-colors">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid md:grid-cols-4 gap-8 mb-8">
             <div>
@@ -400,61 +400,67 @@ export default function LandingPage() {
                 <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-600 to-cyan-500 flex items-center justify-center">
                   <Zap className="w-5 h-5 text-white" />
                 </div>
-                <span className="font-bold text-white">IoT Monitor</span>
+                <span className="font-bold text-slate-900 dark:text-white">NamDuong IoT</span>
               </div>
-              <p className="text-slate-400 text-sm">
-                Intelligent environmental monitoring for smart spaces.
+              <p className="text-slate-600 dark:text-slate-400 text-sm">
+                Hệ thống giám sát môi trường thông minh cho không gian làm việc hiện đại.<br />
+                <span className="text-xs mt-2 block font-semibold text-slate-700 dark:text-slate-300">
+                  Công Ty TNHH Công Nghệ Nam Dương
+                </span>
               </p>
             </div>
             <div>
-              <h4 className="font-semibold text-white mb-4">Product</h4>
+              <h4 className="font-semibold text-slate-900 dark:text-white mb-4">Sản Phẩm</h4>
               <div className="space-y-2">
-                <Link href="/thoi-gian-thuc" className="text-slate-400 hover:text-purple-300 text-sm transition">
-                  Dashboard
+                <Link href="/thoi-gian-thuc" className="text-slate-600 dark:text-slate-400 hover:text-purple-600 dark:hover:text-purple-300 text-sm transition">
+                  Dashboard Thời Gian Thực
                 </Link>
-                <Link href="/lich-su" className="text-slate-400 hover:text-purple-300 text-sm transition block">
-                  Analytics
+                <Link href="/lich-su" className="text-slate-600 dark:text-slate-400 hover:text-purple-600 dark:hover:text-purple-300 text-sm transition block">
+                  Lịch Sử & Phân Tích
                 </Link>
-                <Link href="/thiet-bi" className="text-slate-400 hover:text-purple-300 text-sm transition block">
-                  Devices
+                <Link href="/thiet-bi" className="text-slate-600 dark:text-slate-400 hover:text-purple-600 dark:hover:text-purple-300 text-sm transition block">
+                  Quản Lý Thiết Bị
                 </Link>
               </div>
             </div>
             <div>
-              <h4 className="font-semibold text-white mb-4">Company</h4>
+              <h4 className="font-semibold text-slate-900 dark:text-white mb-4">Công Ty</h4>
               <div className="space-y-2">
-                <a href="#" className="text-slate-400 hover:text-purple-300 text-sm transition block">
-                  About
+                <a href="#" className="text-slate-600 dark:text-slate-400 hover:text-purple-600 dark:hover:text-purple-300 text-sm transition block">
+                  Về Chúng Tôi
                 </a>
-                <a href="#" className="text-slate-400 hover:text-purple-300 text-sm transition block">
-                  Blog
+                <a href="#" className="text-slate-600 dark:text-slate-400 hover:text-purple-600 dark:hover:text-purple-300 text-sm transition block">
+                  Tin Tức
                 </a>
-                <a href="#" className="text-slate-400 hover:text-purple-300 text-sm transition block">
-                  Careers
+                <a href="#" className="text-slate-600 dark:text-slate-400 hover:text-purple-600 dark:hover:text-purple-300 text-sm transition block">
+                  Tuyển Dụng
                 </a>
               </div>
             </div>
             <div>
-              <h4 className="font-semibold text-white mb-4">Legal</h4>
+              <h4 className="font-semibold text-slate-900 dark:text-white mb-4">Pháp Lý</h4>
               <div className="space-y-2">
-                <a href="#" className="text-slate-400 hover:text-purple-300 text-sm transition block">
-                  Privacy
+                <a href="#" className="text-slate-600 dark:text-slate-400 hover:text-purple-600 dark:hover:text-purple-300 text-sm transition block">
+                  Chính Sách Bảo Mật
                 </a>
-                <a href="#" className="text-slate-400 hover:text-purple-300 text-sm transition block">
-                  Terms
+                <a href="#" className="text-slate-600 dark:text-slate-400 hover:text-purple-600 dark:hover:text-purple-300 text-sm transition block">
+                  Điều Khoản Dịch Vụ
                 </a>
-                <a href="#" className="text-slate-400 hover:text-purple-300 text-sm transition block">
-                  Contact
+                <a href="#" className="text-slate-600 dark:text-slate-400 hover:text-purple-600 dark:hover:text-purple-300 text-sm transition block">
+                  Liên Hệ
                 </a>
               </div>
             </div>
           </div>
-          <div className="border-t border-purple-600/30 pt-8 flex flex-col md:flex-row justify-between items-center text-slate-400 text-sm">
-            <div>© 2026 IoT Monitor Pro. All rights reserved.</div>
+          <div className="border-t border-slate-200 dark:border-purple-600/30 pt-8 flex flex-col md:flex-row justify-between items-center text-slate-600 dark:text-slate-400 text-sm">
+            <div>
+              © 2026 Công Ty TNHH Công Nghệ Nam Dương. Bảo lưu mọi quyền.<br />
+              <span className="text-xs text-slate-500 dark:text-slate-500">Giải pháp IoT thông minh cho không gian làm việc</span>
+            </div>
             <div className="flex gap-6 mt-4 md:mt-0">
-              <a href="#" className="hover:text-purple-300 transition">Twitter</a>
-              <a href="#" className="hover:text-purple-300 transition">LinkedIn</a>
-              <a href="#" className="hover:text-purple-300 transition">GitHub</a>
+              <a href="#" className="hover:text-purple-600 dark:hover:text-purple-300 transition">Facebook</a>
+              <a href="#" className="hover:text-purple-600 dark:hover:text-purple-300 transition">LinkedIn</a>
+              <a href="#" className="hover:text-purple-600 dark:hover:text-purple-300 transition">GitHub</a>
             </div>
           </div>
         </div>
