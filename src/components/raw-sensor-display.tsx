@@ -35,60 +35,87 @@ export function RawSensorDisplay() {
   const calculateComfort = (data: RawSensorData) => {
     let score = 100;
     let issues: string[] = [];
-    let status = 0; // 0=good, 1=warning, 2=danger
+    
+    // Track points deducted per sensor for breakdown
+    let breakdown = {
+      temp: 0,
+      humidity: 0,
+      airQuality: 0,
+      light: 0,
+      noise: 0,
+      gas: 0
+    };
 
     // Temperature check
     if (data.temp !== null) {
       if (data.temp < 18 || data.temp > 32) {
+        breakdown.temp = 30;
         score -= 30;
-        status = Math.max(status, 2);
         issues.push("Nhiệt độ bất thường");
       } else if (data.temp < 22 || data.temp > 28) {
+        breakdown.temp = 15;
         score -= 15;
-        status = Math.max(status, 1);
       }
     }
 
     // Humidity check
     if (data.hum !== null) {
       if (data.hum < 30 || data.hum > 75) {
+        breakdown.humidity = 25;
         score -= 25;
-        status = Math.max(status, 2);
         issues.push("Độ ẩm nguy hiểm");
       } else if (data.hum < 40 || data.hum > 60) {
+        breakdown.humidity = 10;
         score -= 10;
-        status = Math.max(status, 1);
       }
     }
 
     // Air quality check
     if (data.mq135 > 450) {
+      breakdown.airQuality = 30;
       score -= 30;
-      status = Math.max(status, 2);
       issues.push("Chất lượng không khí kém");
     } else if (data.mq135 > 200) {
+      breakdown.airQuality = 15;
       score -= 15;
-      status = Math.max(status, 1);
     }
 
     // Gas/Smoke check (highest priority)
     if (data.mq2 === 1) {
+      breakdown.gas = 100;
       score = 0;
-      status = 2;
       issues.unshift("PHÁT HIỆN GAS/KHÓI");
     }
 
     // Light check
     if (data.light === 0) {
+      breakdown.light = 10;
       score -= 10;
-      status = Math.max(status, 1);
     }
 
     // Noise check
     if (data.sound === 1) {
+      breakdown.noise = 15;
       score -= 15;
-      status = Math.max(status, 2);
       issues.push("Tiếng ồn vượt ngưỡng");
+    }
+
+    // Ensure score is within bounds
+    score = Math.max(0, score);
+
+    // Determine status ONLY based on final score ranges
+    // 0=Tốt (80-100), 1=Bình thường (60-79), 2=Trung bình (40-59), 3=Xấu (20-39), 4=Nguy hiểm (0-19)
+    let status = 0;
+    if (score >= 80) {
+      status = 0;
+    } else if (score >= 60) {
+      status = 1;
+    } else if (score >= 40) {
+      status = 2;
+    } else if (score >= 20) {
+      status = 3;
+    } else {
+      status = 4;
     }
 
     const message = issues.length > 0 
@@ -96,10 +123,11 @@ export function RawSensorDisplay() {
       : "✅ Môi trường làm việc đang thoải mái";
 
     return {
-      index: Math.max(0, score),
+      index: score,
       status,
       message,
       issues,
+      breakdown,
     };
   };
 
@@ -160,8 +188,8 @@ export function RawSensorDisplay() {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Đang kết nối với ESP8266...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 dark:border-purple-500 mx-auto mb-4"></div>
+          <p className="text-slate-600 dark:text-slate-400">Đang kết nối với ESP8266...</p>
         </div>
       </div>
     );
@@ -170,50 +198,71 @@ export function RawSensorDisplay() {
   if (error || !data) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-center text-destructive">
+        <div className="text-center text-red-600 dark:text-red-400">
           <AlertCircle className="h-12 w-12 mx-auto mb-4" />
           <p className="font-semibold">Không thể kết nối ESP8266</p>
-          <p className="text-sm mt-2">Kiểm tra kết nối WiFi "IoT-Demo"</p>
-          <p className="text-xs text-muted-foreground mt-1">{error}</p>
+          <p className="text-sm mt-2 text-slate-700 dark:text-slate-300">Kiểm tra kết nối WiFi "IoT-Demo"</p>
+          <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">{error}</p>
         </div>
       </div>
     );
   }
 
-  // Simple level calculation (direct from raw)
-  const getTempLevel = (temp: number | null) => {
+  // Calculate status (0-4) for each individual sensor based on thresholds
+  const getTempStatus = (temp: number | null) => {
     if (temp === null) return 0;
-    if (temp >= 22 && temp <= 28) return 0;
-    if ((temp >= 18 && temp < 22) || (temp > 28 && temp <= 32)) return 1;
-    return 2;
+    if (temp >= 22 && temp <= 28) return 0; // Tốt
+    if ((temp >= 18 && temp < 22) || (temp > 28 && temp <= 32)) return 1; // Bình thường
+    return 4; // Nguy hiểm
   };
 
-  const getHumLevel = (hum: number | null) => {
+  const getHumStatus = (hum: number | null) => {
     if (hum === null) return 0;
-    if (hum >= 40 && hum <= 60) return 0;
-    if ((hum >= 30 && hum < 40) || (hum > 60 && hum <= 75)) return 1;
-    return 2;
+    if (hum >= 40 && hum <= 60) return 0; // Tốt
+    if ((hum >= 30 && hum < 40) || (hum > 60 && hum <= 75)) return 1; // Bình thường
+    return 4; // Nguy hiểm
   };
 
-  const getMq135Level = (val: number) => {
-    if (val < 200) return 0;
-    if (val <= 450) return 1;
-    return 2;
+  const getAirQualityStatus = (val: number) => {
+    if (val < 150) return 0; // Tốt
+    if (val < 250) return 2; // Trung bình
+    if (val < 350) return 3; // Xấu
+    return 4; // Nguy hiểm
   };
 
-  const getLevelBadge = (level: number) => {
-    if (level === 0) return <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">Tốt</Badge>;
-    if (level === 1) return <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">TB</Badge>;
-    return <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">Nguy hiểm</Badge>;
+  const getDigitalSensorStatus = (value: number) => {
+    return value === 1 ? 4 : 0; // Phát hiện=Nguy hiểm, Bình thường=Tốt
   };
 
-  const getStatusBadge = (value: number) => {
-    return value === 1 
-      ? <Badge className="bg-red-500">PHÁT HIỆN</Badge>
-      : <Badge className="bg-green-500">Bình thường</Badge>;
+  const getStatusColor = (status: number) => {
+    switch (status) {
+      case 0: return "bg-green-600";
+      case 1: return "bg-green-500";
+      case 2: return "bg-yellow-500";
+      case 3: return "bg-orange-500";
+      case 4: return "bg-red-600";
+      default: return "bg-gray-500";
+    }
   };
 
-  const comfort = data ? calculateComfort(data) : { index: 0, status: 0, message: "", issues: [] };
+  const getStatusBadge = (status: number) => {
+    switch (status) {
+      case 0: return <Badge className={`${getStatusColor(0)} text-white`}>🟢 Tốt</Badge>;
+      case 1: return <Badge className={`${getStatusColor(1)} text-white`}>🟡 Bình thường</Badge>;
+      case 2: return <Badge className={`${getStatusColor(2)} text-white`}>🟠 Trung bình</Badge>;
+      case 3: return <Badge className={`${getStatusColor(3)} text-white`}>🔴 Xấu</Badge>;
+      case 4: return <Badge className={`${getStatusColor(4)} text-white`}>⛔ Nguy hiểm</Badge>;
+      default: return <Badge className="bg-gray-500 text-white">N/A</Badge>;
+    }
+  };
+
+  const comfort = data ? calculateComfort(data) : { 
+    index: 0, 
+    status: 0, 
+    message: "", 
+    issues: [], 
+    breakdown: { temp: 0, humidity: 0, airQuality: 0, light: 0, noise: 0, gas: 0 }
+  };
 
   return (
     <>
@@ -225,14 +274,14 @@ export function RawSensorDisplay() {
       
       <div className="space-y-6">
       {/* Header */}
-      <Card className="p-6">
+      <Card className="p-6 border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
         <div className="flex items-start justify-between">
           <div>
-            <h2 className="text-2xl font-bold mb-2">Dữ liệu RAW từ ESP8266</h2>
-            <p className="text-muted-foreground">Hiển thị trực tiếp - Không qua xử lý</p>
+            <h2 className="text-2xl font-bold mb-2 text-slate-900 dark:text-white">Dữ liệu RAW từ ESP8266</h2>
+            <p className="text-slate-600 dark:text-slate-400">Hiển thị trực tiếp - Không qua xử lý</p>
           </div>
           <div className="text-right">
-            <div className="text-sm text-muted-foreground">
+            <div className="text-sm text-slate-600 dark:text-slate-400">
               {lastUpdate && `Cập nhật: ${lastUpdate.toLocaleTimeString("vi-VN")}`}
             </div>
           </div>
@@ -244,110 +293,111 @@ export function RawSensorDisplay() {
         index={comfort.index}
         status={comfort.status}
         message={comfort.message}
+        breakdown={comfort.breakdown}
       />
 
       {/* Sensor Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {/* Temperature */}
-        <Card className="p-4">
+        <Card className="p-4 border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
           <div className="flex items-start justify-between mb-3">
             <div className="flex items-center gap-2">
               <Thermometer className="h-5 w-5 text-orange-500" />
-              <h3 className="font-semibold">Nhiệt độ</h3>
+              <h3 className="font-semibold text-slate-900 dark:text-white">Nhiệt độ</h3>
             </div>
-            {getLevelBadge(getTempLevel(data.temp))}
+            {getStatusBadge(getTempStatus(data.temp))}
           </div>
-          <div className="text-3xl font-bold mb-1">
+          <div className="text-3xl font-bold mb-1 text-slate-900 dark:text-white">
             {data.temp !== null ? `${data.temp.toFixed(1)}°C` : "N/A"}
           </div>
           <div className="text-xs text-muted-foreground">Tốt: 22-28°C</div>
         </Card>
 
         {/* Humidity */}
-        <Card className="p-4">
+        <Card className="p-4 border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
           <div className="flex items-start justify-between mb-3">
             <div className="flex items-center gap-2">
               <Droplets className="h-5 w-5 text-blue-500" />
-              <h3 className="font-semibold">Độ ẩm</h3>
+              <h3 className="font-semibold text-slate-900 dark:text-white">Độ ẩm</h3>
             </div>
-            {getLevelBadge(getHumLevel(data.hum))}
+            {getStatusBadge(getHumStatus(data.hum))}
           </div>
-          <div className="text-3xl font-bold mb-1">
+          <div className="text-3xl font-bold mb-1 text-slate-900 dark:text-white">
             {data.hum !== null ? `${data.hum.toFixed(1)}%` : "N/A"}
           </div>
-          <div className="text-xs text-muted-foreground">Tốt: 40-60%</div>
+          <div className="text-xs text-slate-600 dark:text-slate-400">Tốt: 40-60%</div>
         </Card>
 
         {/* Air Quality */}
-        <Card className="p-4">
+        <Card className="p-4 border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
           <div className="flex items-start justify-between mb-3">
             <div className="flex items-center gap-2">
               <Wind className="h-5 w-5 text-green-500" />
-              <h3 className="font-semibold">Chất lượng không khí</h3>
+              <h3 className="font-semibold text-slate-900 dark:text-white">Chất lượng không khí</h3>
             </div>
-            {getLevelBadge(getMq135Level(data.mq135))}
+            {getStatusBadge(getAirQualityStatus(data.mq135))}
           </div>
-          <div className="text-3xl font-bold mb-1">{data.mq135}</div>
-          <div className="text-xs text-muted-foreground">PPM (analog 0-1023)</div>
+          <div className="text-3xl font-bold mb-1 text-slate-900 dark:text-white">{data.mq135}</div>
+          <div className="text-xs text-slate-600 dark:text-slate-400">PPM (analog 0-1023)</div>
         </Card>
 
         {/* Light */}
-        <Card className="p-4">
+        <Card className="p-4 border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
           <div className="flex items-start justify-between mb-3">
             <div className="flex items-center gap-2">
               <Lightbulb className="h-5 w-5 text-yellow-500" />
-              <h3 className="font-semibold">Ánh sáng</h3>
+              <h3 className="font-semibold text-slate-900 dark:text-white">Ánh sáng</h3>
             </div>
-            {getStatusBadge(data.light)}
+            {getStatusBadge(getDigitalSensorStatus(data.light))}
           </div>
-          <div className="text-3xl font-bold mb-1">
+          <div className="text-3xl font-bold mb-1 text-slate-900 dark:text-white">
             {data.light === 1 ? "Đủ sáng" : "Thiếu sáng"}
           </div>
-          <div className="text-xs text-muted-foreground">
+          <div className="text-xs text-slate-600 dark:text-slate-400">
             Digital: {data.light}
           </div>
         </Card>
 
         {/* Noise */}
-        <Card className="p-4">
+        <Card className="p-4 border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
           <div className="flex items-start justify-between mb-3">
             <div className="flex items-center gap-2">
               <Volume2 className="h-5 w-5 text-purple-500" />
-              <h3 className="font-semibold">Tiếng ồn</h3>
+              <h3 className="font-semibold text-slate-900 dark:text-white">Tiếng ồn</h3>
             </div>
-            {getStatusBadge(data.sound)}
+            {getStatusBadge(getDigitalSensorStatus(data.sound))}
           </div>
-          <div className="text-3xl font-bold mb-1">
+          <div className="text-3xl font-bold mb-1 text-slate-900 dark:text-white">
             {data.sound === 1 ? "Ồn" : "Yên tĩnh"}
           </div>
-          <div className="text-xs text-muted-foreground">
+          <div className="text-xs text-slate-600 dark:text-slate-400">
             Digital: {data.sound}
           </div>
         </Card>
 
         {/* Gas/Smoke */}
-        <Card className="p-4">
+        <Card className="p-4 border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
           <div className="flex items-start justify-between mb-3">
             <div className="flex items-center gap-2">
               <Flame className="h-5 w-5 text-red-500" />
-              <h3 className="font-semibold">Gas/Khói</h3>
+              <h3 className="font-semibold text-slate-900 dark:text-white">Gas/Khói</h3>
             </div>
-            {getStatusBadge(data.mq2)}
+            {getStatusBadge(getDigitalSensorStatus(data.mq2))}
           </div>
-          <div className="text-3xl font-bold mb-1">
+          <div className="text-3xl font-bold mb-1 text-slate-900 dark:text-white">
             {data.mq2 === 1 ? "PHÁT HIỆN" : "An toàn"}
           </div>
-          <div className="text-xs text-muted-foreground">
+          <div className="text-xs text-slate-600 dark:text-slate-400">
             Digital: {data.mq2}
           </div>
         </Card>
       </div>
 
       {/* Raw JSON Display */}
-      <Card className="p-4">
+      <Card className="p-4 border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
         <details open>
-          <summary className="font-semibold cursor-pointer mb-2">📡 Raw JSON từ API</summary>
-          <pre className="text-sm bg-muted p-4 rounded overflow-auto">
+          <summary className="font-semibold cursor-pointer mb-2 text-slate-900 dark:text-white">📡 Raw JSON từ API</summary>
+          <pre className="text-sm bg-slate-100 dark:bg-slate-800 p-4 rounded overflow-auto text-slate-900 dark:text-slate-100">
             {JSON.stringify(data, null, 2)}
           </pre>
         </details>

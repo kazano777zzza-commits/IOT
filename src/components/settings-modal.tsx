@@ -27,39 +27,39 @@ type SettingsModalProps = {
 export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-2xl border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
         <DialogHeader>
-          <DialogTitle>Cài đặt</DialogTitle>
-          <DialogDescription>
+          <DialogTitle className="text-slate-900 dark:text-white">Cài đặt</DialogTitle>
+          <DialogDescription className="text-slate-600 dark:text-slate-400">
             Quản lý ngưỡng cảnh báo, thông báo và giao diện của hệ thống.
           </DialogDescription>
         </DialogHeader>
         <Tabs defaultValue="thresholds" className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="thresholds">Ngưỡng cảnh báo</TabsTrigger>
-            <TabsTrigger value="notifications">Thông báo</TabsTrigger>
-            <TabsTrigger value="appearance">Giao diện</TabsTrigger>
-            <TabsTrigger value="system">Hệ thống</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-4 bg-slate-100 dark:bg-slate-800">
+            <TabsTrigger value="thresholds" className="text-slate-700 dark:text-slate-300 data-[state=active]:text-slate-900 dark:data-[state=active]:text-white">Ngưỡng cảnh báo</TabsTrigger>
+            <TabsTrigger value="notifications" className="text-slate-700 dark:text-slate-300 data-[state=active]:text-slate-900 dark:data-[state=active]:text-white">Thông báo</TabsTrigger>
+            <TabsTrigger value="appearance" className="text-slate-700 dark:text-slate-300 data-[state=active]:text-slate-900 dark:data-[state=active]:text-white">Giao diện</TabsTrigger>
+            <TabsTrigger value="system" className="text-slate-700 dark:text-slate-300 data-[state=active]:text-slate-900 dark:data-[state=active]:text-white">Hệ thống</TabsTrigger>
           </TabsList>
           
           <TabsContent value="thresholds" className="mt-4 max-h-[50vh] overflow-y-auto pr-4">
             <div className="space-y-6">
               {SENSORS.map((sensor) => (
-                <div key={sensor.id} className="space-y-4 rounded-lg border p-4">
-                  <h4 className="font-medium">{sensor.name}</h4>
+                <div key={sensor.id} className="space-y-4 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800 p-4">
+                  <h4 className="font-medium text-slate-900 dark:text-white">{sensor.name}</h4>
                   <div className="grid grid-cols-3 items-center gap-4">
-                    <Label>Tốt {'<'} {sensor.thresholds.medium}</Label>
+                    <Label className="text-slate-700 dark:text-slate-300">Tốt {'<'} {sensor.thresholds.medium}</Label>
                     <div className="col-span-2 flex items-center gap-2">
                        <div className="w-full h-2 rounded-full bg-green-500"></div>
                     </div>
                   </div>
                   <div className="grid grid-cols-3 items-center gap-4">
-                    <Label htmlFor={`${sensor.id}-medium`}>Trung bình (vàng)</Label>
-                    <Input id={`${sensor.id}-medium`} type="number" defaultValue={sensor.thresholds.medium} className="col-span-1" />
+                    <Label htmlFor={`${sensor.id}-medium`} className="text-slate-700 dark:text-slate-300">Trung bình (vàng)</Label>
+                    <Input id={`${sensor.id}-medium`} type="number" defaultValue={sensor.thresholds.medium} className="col-span-1 border-slate-300 dark:border-slate-600 dark:bg-slate-900 dark:text-white" />
                   </div>
                    <div className="grid grid-cols-3 items-center gap-4">
-                    <Label htmlFor={`${sensor.id}-high`}>Nguy hiểm (đỏ) {'>='}</Label>
-                    <Input id={`${sensor.id}-high`} type="number" defaultValue={sensor.thresholds.high} className="col-span-1" />
+                    <Label htmlFor={`${sensor.id}-high`} className="text-slate-700 dark:text-slate-300">Nguy hiểm (đỏ) {'>='}</Label>
+                    <Input id={`${sensor.id}-high`} type="number" defaultValue={sensor.thresholds.high} className="col-span-1 border-slate-300 dark:border-slate-600 dark:bg-slate-900 dark:text-white" />
                   </div>
                 </div>
               ))}
@@ -68,17 +68,17 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
 
           <TabsContent value="notifications" className="mt-4">
              <div className="space-y-4">
-              <div className="flex items-center justify-between rounded-lg border p-4">
+              <div className="flex items-center justify-between rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800 p-4">
                 <div className="space-y-0.5">
-                  <Label className="text-base">Popup cảnh báo</Label>
-                  <p className="text-sm text-muted-foreground">Hiển thị popup trên màn hình khi có cảnh báo nguy hiểm.</p>
+                  <Label className="text-base text-slate-900 dark:text-white">Popup cảnh báo</Label>
+                  <p className="text-sm text-slate-600 dark:text-slate-400">Hiển thị popup trên màn hình khi có cảnh báo nguy hiểm.</p>
                 </div>
                 <Switch defaultChecked/>
               </div>
-              <div className="flex items-center justify-between rounded-lg border p-4">
+              <div className="flex items-center justify-between rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800 p-4">
                 <div className="space-y-0.5">
-                  <Label className="text-base">Âm thanh cảnh báo</Label>
-                  <p className="text-sm text-muted-foreground">Phát âm thanh khi có cảnh báo mới.</p>
+                  <Label className="text-base text-slate-900 dark:text-white">Âm thanh cảnh báo</Label>
+                  <p className="text-sm text-slate-600 dark:text-slate-400">Phát âm thanh khi có cảnh báo mới.</p>
                 </div>
                 <Switch />
               </div>
@@ -87,10 +87,10 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
           
           <TabsContent value="appearance" className="mt-4">
              <div className="space-y-4">
-              <div className="flex items-center justify-between rounded-lg border p-4">
+              <div className="flex items-center justify-between rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800 p-4">
                 <div className="space-y-0.5">
-                  <Label className="text-base">Chế độ tối</Label>
-                  <p className="text-sm text-muted-foreground">Bật/tắt giao diện nền tối.</p>
+                  <Label className="text-base text-slate-900 dark:text-white">Chế độ tối</Label>
+                  <p className="text-sm text-slate-600 dark:text-slate-400">Bật/tắt giao diện nền tối.</p>
                 </div>
                 <Switch />
               </div>
@@ -100,16 +100,16 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
           <TabsContent value="system" className="mt-4">
             <div className="space-y-4 text-sm">
                 <div className="flex justify-between">
-                    <span className="text-muted-foreground">Nguồn dữ liệu:</span>
-                    <span>Firebase</span>
+                    <span className="text-slate-600 dark:text-slate-400">Nguồn dữ liệu:</span>
+                    <span className="text-slate-900 dark:text-white">Firebase</span>
                 </div>
                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">ID Thiết bị:</span>
-                    <span className="font-mono">ESP8266-NAMDUONG-01</span>
+                    <span className="text-slate-600 dark:text-slate-400">ID Thiết bị:</span>
+                    <span className="font-mono text-slate-900 dark:text-white">ESP8266-NAMDUONG-01</span>
                 </div>
                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Phiên bản Dashboard:</span>
-                    <span>1.0.0</span>
+                    <span className="text-slate-600 dark:text-slate-400">Phiên bản Dashboard:</span>
+                    <span className="text-slate-900 dark:text-white">1.0.0</span>
                 </div>
             </div>
           </TabsContent>

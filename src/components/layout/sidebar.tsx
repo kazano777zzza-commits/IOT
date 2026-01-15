@@ -34,12 +34,12 @@ export default function Sidebar() {
   return (
     <>
       <TooltipProvider delayDuration={0}>
-        <aside className="hidden md:flex fixed left-0 top-0 h-screen w-16 flex-col border-r bg-background z-50">
+        <aside className="hidden md:flex fixed left-0 top-0 h-screen w-16 flex-col border-r bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 z-50 transition-colors">
           {/* Logo */}
-          <div className="flex h-14 items-center justify-center border-b">
+          <div className="flex h-14 items-center justify-center border-b border-slate-200 dark:border-slate-800">
             <Link href="/tong-quan">
-              <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center shadow-lg shadow-primary/25">
-                <Activity className="h-5 w-5 text-primary-foreground" />
+              <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-purple-600 to-cyan-600 flex items-center justify-center shadow-lg shadow-purple/25">
+                <Activity className="h-5 w-5 text-white" />
               </div>
             </Link>
           </div>
@@ -54,8 +54,8 @@ export default function Sidebar() {
                     className={cn(
                       "flex h-10 w-full items-center justify-center rounded-lg transition-colors",
                       pathname === item.href
-                        ? "bg-primary text-primary-foreground"
-                        : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                        ? "bg-purple-600 text-white dark:bg-purple-600"
+                        : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white"
                     )}
                   >
                     <item.icon className="h-5 w-5" />
@@ -69,17 +69,17 @@ export default function Sidebar() {
           </nav>
 
           {/* Footer */}
-          <div className="p-2 border-t">
+          <div className="p-2 border-t border-slate-200 dark:border-slate-800">
             <Tooltip>
               <TooltipTrigger asChild>
                 <button
                   onClick={() => setSettingsOpen(true)}
-                  className="flex h-10 w-full items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                  className="flex h-10 w-full items-center justify-center rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white transition-colors"
                 >
                   <Settings className="h-5 w-5" />
                 </button>
               </TooltipTrigger>
-              <TooltipContent side="right" className="bg-primary text-primary-foreground">
+              <TooltipContent side="right" className="bg-purple-600 text-white dark:bg-purple-600">
                 Cài đặt
               </TooltipContent>
             </Tooltip>
