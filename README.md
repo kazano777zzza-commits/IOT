@@ -11,4 +11,3 @@ Gồm **phần cứng (ESP8266 + cảm biến)** và **Web Dashboard (Next.js + 
 - ESP cung cấp API **HTTP `/data`** trả JSON realtime:
   ```json
   {"temp":22.2,"hum":74.2,"mq135":1,"light":0,"sound":0,"mq2":0}
-  EZZZZZZ
