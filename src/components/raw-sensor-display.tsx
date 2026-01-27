@@ -20,121 +20,167 @@ interface RawSensorData {
   light: number;
   sound: number;
   mq2: number;
+  // Các trường mở rộng từ Arduino
+  light_value?: number;
+  sound_value?: number;
+  mq2_value?: number;
+  mq135_alert?: number;
+  dht_ok?: number;
+  sound_msg?: string;
+  light_msg?: string;
+  mq2_msg?: string;
+  mq135_msg?: string;
+  dht_msg?: string;
 }
 
-const ESP8266_URL = "http://192.168.4.1/data";
+// Sử dụng API route thay vì gọi trực tiếp ESP8266
+const API_URL = "/api/sensor-data";
 
 export function RawSensorDisplay() {
   const [data, setData] = useState<RawSensorData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
-  const { alerts, addAlert, dismissAlert } = useAlerts();
+  const { alerts, addAlert, dismissAlert, clearDanger } = useAlerts();
 
   // Calculate comfort index and room status
+  // Tổng điểm tối đa: 100 điểm
+  // Phân bổ: Nhiệt độ 20đ, Độ ẩm 20đ, Không khí 20đ, Ánh sáng 15đ, Tiếng ồn 10đ, Gas 15đ
   const calculateComfort = (data: RawSensorData) => {
-    let score = 100;
-    let issues: string[] = [];
-    
-    // Track points deducted per sensor for breakdown
-    let breakdown = {
-      temp: 0,
-      humidity: 0,
-      airQuality: 0,
-      light: 0,
-      noise: 0,
-      gas: 0
+    // Điểm tối đa cho mỗi chỉ số
+    const MAX_POINTS = {
+      temp: 20,
+      humidity: 20,
+      airQuality: 20,
+      light: 15,
+      noise: 10,
+      gas: 15
     };
+    
+    // Track điểm đạt được cho mỗi chỉ số (bắt đầu từ max)
+    let points = {
+      temp: MAX_POINTS.temp,
+      humidity: MAX_POINTS.humidity,
+      airQuality: MAX_POINTS.airQuality,
+      light: MAX_POINTS.light,
+      noise: MAX_POINTS.noise,
+      gas: MAX_POINTS.gas
+    };
+    
+    let issues: string[] = [];
 
-    // Temperature check
+    // === NHIỆT ĐỘ (20 điểm) ===
+    // Tốt: 22-28°C (20đ), Bình thường: 18-32°C (15đ), Trung bình: 15-35°C (10đ), Xấu: còn lại (5đ)
     if (data.temp !== null) {
-      if (data.temp < 18 || data.temp > 32) {
-        breakdown.temp = 30;
-        score -= 30;
-        issues.push("Nhiệt độ bất thường");
-      } else if (data.temp < 22 || data.temp > 28) {
-        breakdown.temp = 15;
-        score -= 15;
+      if (data.temp >= 22 && data.temp <= 28) {
+        points.temp = 20;  // Tốt - full điểm
+      } else if (data.temp >= 18 && data.temp <= 32) {
+        points.temp = 15;  // Bình thường
+      } else if (data.temp >= 15 && data.temp <= 35) {
+        points.temp = 10;  // Trung bình
+      } else {
+        points.temp = 5;   // Xấu
+        issues.push("Nhiệt độ không tốt");
       }
+    } else {
+      points.temp = 0;  // Không có dữ liệu
     }
 
-    // Humidity check
+    // === ĐỘ ẨM (20 điểm) ===
+    // Tốt: 40-60% (20đ), Bình thường: 30-70% (15đ), Trung bình: 20-85% (10đ), Xấu: còn lại (5đ)
     if (data.hum !== null) {
-      if (data.hum < 30 || data.hum > 75) {
-        breakdown.humidity = 25;
-        score -= 25;
-        issues.push("Độ ẩm nguy hiểm");
-      } else if (data.hum < 40 || data.hum > 60) {
-        breakdown.humidity = 10;
-        score -= 10;
+      if (data.hum >= 40 && data.hum <= 60) {
+        points.humidity = 20;  // Tốt - full điểm
+      } else if (data.hum >= 30 && data.hum <= 70) {
+        points.humidity = 15;  // Bình thường
+      } else if (data.hum >= 20 && data.hum <= 85) {
+        points.humidity = 10;  // Trung bình
+      } else {
+        points.humidity = 5;   // Xấu
+        issues.push("Độ ẩm không phù hợp");
       }
+    } else {
+      points.humidity = 0;  // Không có dữ liệu
     }
 
-    // Air quality check
-    if (data.mq135 > 450) {
-      breakdown.airQuality = 30;
-      score -= 30;
+    // === CHẤT LƯỢNG KHÔNG KHÍ MQ135 (20 điểm) ===
+    // Tốt: <300 (20đ), Bình thường: 300-450 (15đ), Trung bình: 450-600 (10đ), Xấu: >600 (5đ)
+    if (data.mq135 < 300) {
+      points.airQuality = 20;  // Tốt
+    } else if (data.mq135 < 450) {
+      points.airQuality = 15;  // Bình thường
+    } else if (data.mq135 < 600) {
+      points.airQuality = 10;  // Trung bình
+    } else {
+      points.airQuality = 5;   // Xấu
       issues.push("Chất lượng không khí kém");
-    } else if (data.mq135 > 200) {
-      breakdown.airQuality = 15;
-      score -= 15;
     }
 
-    // Gas/Smoke check (highest priority)
-    if (data.mq2 === 1) {
-      breakdown.gas = 100;
-      score = 0;
-      issues.unshift("PHÁT HIỆN GAS/KHÓI");
-    }
-
-    // Light check
+    // === ÁNH SÁNG (15 điểm) ===
+    // light=0 là đủ sáng (15đ), light=1 là thiếu sáng (0đ) - XẤU
     if (data.light === 0) {
-      breakdown.light = 10;
-      score -= 10;
+      points.light = 15;  // Đủ sáng - full điểm
+    } else {
+      points.light = 0;   // Thiếu sáng - XẤU
+      issues.push("Thiếu ánh sáng");
     }
 
-    // Noise check
-    if (data.sound === 1) {
-      breakdown.noise = 15;
-      score -= 15;
-      issues.push("Tiếng ồn vượt ngưỡng");
+    // === TIẾNG ỒN (10 điểm) ===
+    // sound=0 là yên tĩnh (10đ), sound=1 là có tiếng ồn (0đ)
+    if (data.sound === 0) {
+      points.noise = 10;  // Yên tĩnh - full điểm
+    } else {
+      points.noise = 0;   // Có tiếng ồn
     }
 
-    // Ensure score is within bounds
-    score = Math.max(0, score);
+    // === GAS/KHÓI MQ2 (15 điểm) ===
+    // mq2=0 là an toàn (15đ), mq2=1 là có gas (0đ + NGUY HIỂM)
+    if (data.mq2 === 0) {
+      points.gas = 15;  // An toàn - full điểm
+    } else {
+      points.gas = 0;   // NGUY HIỂM
+      issues.unshift("⚠️ PHÁT HIỆN GAS/KHÓI - NGUY HIỂM!");
+    }
 
-    // Determine status ONLY based on final score ranges
+    // Tính tổng điểm
+    const totalScore = points.temp + points.humidity + points.airQuality + 
+                       points.light + points.noise + points.gas;
+
+    // Determine status based on score ranges
     // 0=Tốt (80-100), 1=Bình thường (60-79), 2=Trung bình (40-59), 3=Xấu (20-39), 4=Nguy hiểm (0-19)
     let status = 0;
-    if (score >= 80) {
-      status = 0;
-    } else if (score >= 60) {
-      status = 1;
-    } else if (score >= 40) {
-      status = 2;
-    } else if (score >= 20) {
-      status = 3;
+    if (data.mq2 === 1) {
+      status = 4;  // Gas luôn là nguy hiểm
+    } else if (totalScore >= 80) {
+      status = 0;  // Tốt
+    } else if (totalScore >= 60) {
+      status = 1;  // Bình thường
+    } else if (totalScore >= 40) {
+      status = 2;  // Trung bình
+    } else if (totalScore >= 20) {
+      status = 3;  // Xấu
     } else {
-      status = 4;
+      status = 4;  // Nguy hiểm
     }
 
     const message = issues.length > 0 
-      ? `⚠️ ${issues[0]}`
+      ? `${issues[0]}`
       : "✅ Môi trường làm việc đang thoải mái";
 
     return {
-      index: score,
+      index: totalScore,
       status,
       message,
       issues,
-      breakdown,
+      breakdown: points,
+      maxPoints: MAX_POINTS
     };
   };
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await fetch(ESP8266_URL, {
+        const response = await fetch(API_URL, {
           cache: "no-store",
         });
 
@@ -142,7 +188,15 @@ export function RawSensorDisplay() {
           throw new Error(`HTTP ${response.status}`);
         }
 
-        const result: RawSensorData = await response.json();
+        const apiResult = await response.json();
+        
+        // Nếu API trả về lỗi
+        if (!apiResult.success) {
+          throw new Error(apiResult.error || "API Error");
+        }
+
+        // Lấy raw data từ API response
+        const result: RawSensorData = apiResult.raw;
         setData(result);
         setError(null);
         setLoading(false);
@@ -151,11 +205,36 @@ export function RawSensorDisplay() {
         // Calculate comfort and check for alerts
         const comfort = calculateComfort(result);
         
-        // Trigger alerts for dangerous conditions
-        if (comfort.status === 2 && comfort.issues.length > 0) {
-          comfort.issues.forEach(issue => {
-            addAlert("danger", "CẢNH BÁO", issue);
-          });
+        // Kiểm tra các điều kiện NGUY HIỂM (chỉ Gas, Nhiệt độ cực đoan, Không khí xấu)
+        let dangerDetected = false;
+        let dangerType = "";
+        let dangerMessage = "";
+
+        // 1. GAS - ưu tiên cao nhất
+        if (result.mq2 === 1) {
+          dangerDetected = true;
+          dangerType = "gas";
+          dangerMessage = "⚠️ PHÁT HIỆN GAS/KHÓI - Kiểm tra ngay!";
+        }
+        // 2. Nhiệt độ cực đoan (< 15°C hoặc > 38°C)
+        else if (result.temp !== null && (result.temp < 15 || result.temp > 38)) {
+          dangerDetected = true;
+          dangerType = "temp";
+          dangerMessage = `🌡️ Nhiệt độ nguy hiểm: ${result.temp}°C`;
+        }
+        // 3. Không khí rất xấu (MQ135 > 800)
+        else if (result.mq135 > 800) {
+          dangerDetected = true;
+          dangerType = "air";
+          dangerMessage = `💨 Chất lượng không khí nguy hiểm: ${result.mq135} PPM`;
+        }
+
+        // Chỉ hiện 1 cảnh báo duy nhất, và xóa khi hết nguy hiểm
+        if (dangerDetected) {
+          addAlert("danger", "🚨 NGUY HIỂM", dangerMessage, dangerType);
+        } else {
+          // Hết nguy hiểm -> xóa cảnh báo
+          clearDanger();
         }
 
         // Lưu vào lịch sử
@@ -209,28 +288,43 @@ export function RawSensorDisplay() {
   }
 
   // Calculate status (0-4) for each individual sensor based on thresholds
+  // 0=Tốt, 1=Bình thường, 2=Trung bình, 3=Xấu, 4=Nguy hiểm
   const getTempStatus = (temp: number | null) => {
     if (temp === null) return 0;
     if (temp >= 22 && temp <= 28) return 0; // Tốt
     if ((temp >= 18 && temp < 22) || (temp > 28 && temp <= 32)) return 1; // Bình thường
+    if ((temp >= 15 && temp < 18) || (temp > 32 && temp <= 38)) return 3; // Xấu
     return 4; // Nguy hiểm
   };
 
   const getHumStatus = (hum: number | null) => {
     if (hum === null) return 0;
     if (hum >= 40 && hum <= 60) return 0; // Tốt
-    if ((hum >= 30 && hum < 40) || (hum > 60 && hum <= 75)) return 1; // Bình thường
-    return 4; // Nguy hiểm
+    if ((hum >= 30 && hum < 40) || (hum > 60 && hum <= 80)) return 1; // Bình thường
+    if ((hum >= 20 && hum < 30) || (hum > 80 && hum <= 90)) return 2; // Trung bình
+    return 3; // Xấu (không phải nguy hiểm)
   };
 
   const getAirQualityStatus = (val: number) => {
-    if (val < 150) return 0; // Tốt
-    if (val < 250) return 2; // Trung bình
-    if (val < 350) return 3; // Xấu
+    if (val < 300) return 0; // Tốt
+    if (val < 450) return 1; // Bình thường
+    if (val < 600) return 2; // Trung bình
+    if (val < 800) return 3; // Xấu
     return 4; // Nguy hiểm
   };
 
-  const getDigitalSensorStatus = (value: number) => {
+  // Light: light=1 là tối, light=0 là sáng
+  const getLightStatus = (value: number) => {
+    return value === 1 ? 1 : 0; // Tối=Bình thường, Sáng=Tốt
+  };
+
+  // Sound: sound=1 là ồn
+  const getSoundStatus = (value: number) => {
+    return value === 1 ? 1 : 0; // Ồn=Bình thường, Yên tĩnh=Tốt
+  };
+
+  // Gas: mq2=1 là phát hiện gas -> NGUY HIỂM
+  const getGasStatus = (value: number) => {
     return value === 1 ? 4 : 0; // Phát hiện=Nguy hiểm, Bình thường=Tốt
   };
 
@@ -261,7 +355,8 @@ export function RawSensorDisplay() {
     status: 0, 
     message: "", 
     issues: [], 
-    breakdown: { temp: 0, humidity: 0, airQuality: 0, light: 0, noise: 0, gas: 0 }
+    breakdown: { temp: 0, humidity: 0, airQuality: 0, light: 0, noise: 0, gas: 0 },
+    maxPoints: { temp: 20, humidity: 20, airQuality: 20, light: 15, noise: 10, gas: 15 }
   };
 
   return (
@@ -278,7 +373,7 @@ export function RawSensorDisplay() {
         <div className="flex items-start justify-between">
           <div>
             <h2 className="text-2xl font-bold mb-2 text-slate-900 dark:text-white">Dữ liệu RAW từ ESP8266</h2>
-            <p className="text-slate-600 dark:text-slate-400">Hiển thị trực tiếp - Không qua xử lý</p>
+            
           </div>
           <div className="text-right">
             <div className="text-sm text-slate-600 dark:text-slate-400">
@@ -294,6 +389,7 @@ export function RawSensorDisplay() {
         status={comfort.status}
         message={comfort.message}
         breakdown={comfort.breakdown}
+        maxPoints={comfort.maxPoints}
       />
 
       {/* Sensor Grid */}
@@ -310,7 +406,6 @@ export function RawSensorDisplay() {
           <div className="text-3xl font-bold mb-1 text-slate-900 dark:text-white">
             {data.temp !== null ? `${data.temp.toFixed(1)}°C` : "N/A"}
           </div>
-          <div className="text-xs text-muted-foreground">Tốt: 22-28°C</div>
         </Card>
 
         {/* Humidity */}
@@ -325,7 +420,6 @@ export function RawSensorDisplay() {
           <div className="text-3xl font-bold mb-1 text-slate-900 dark:text-white">
             {data.hum !== null ? `${data.hum.toFixed(1)}%` : "N/A"}
           </div>
-          <div className="text-xs text-slate-600 dark:text-slate-400">Tốt: 40-60%</div>
         </Card>
 
         {/* Air Quality */}
@@ -338,7 +432,6 @@ export function RawSensorDisplay() {
             {getStatusBadge(getAirQualityStatus(data.mq135))}
           </div>
           <div className="text-3xl font-bold mb-1 text-slate-900 dark:text-white">{data.mq135}</div>
-          <div className="text-xs text-slate-600 dark:text-slate-400">PPM (analog 0-1023)</div>
         </Card>
 
         {/* Light */}
@@ -348,14 +441,12 @@ export function RawSensorDisplay() {
               <Lightbulb className="h-5 w-5 text-yellow-500" />
               <h3 className="font-semibold text-slate-900 dark:text-white">Ánh sáng</h3>
             </div>
-            {getStatusBadge(getDigitalSensorStatus(data.light))}
+            {getStatusBadge(getLightStatus(data.light))}
           </div>
           <div className="text-3xl font-bold mb-1 text-slate-900 dark:text-white">
-            {data.light === 1 ? "Đủ sáng" : "Thiếu sáng"}
+            {data.light === 0 ? "Đủ sáng" : "Thiếu sáng"}
           </div>
-          <div className="text-xs text-slate-600 dark:text-slate-400">
-            Digital: {data.light}
-          </div>
+
         </Card>
 
         {/* Noise */}
@@ -365,14 +456,12 @@ export function RawSensorDisplay() {
               <Volume2 className="h-5 w-5 text-purple-500" />
               <h3 className="font-semibold text-slate-900 dark:text-white">Tiếng ồn</h3>
             </div>
-            {getStatusBadge(getDigitalSensorStatus(data.sound))}
+            {getStatusBadge(getSoundStatus(data.sound))}
           </div>
           <div className="text-3xl font-bold mb-1 text-slate-900 dark:text-white">
             {data.sound === 1 ? "Ồn" : "Yên tĩnh"}
           </div>
-          <div className="text-xs text-slate-600 dark:text-slate-400">
-            Digital: {data.sound}
-          </div>
+
         </Card>
 
         {/* Gas/Smoke */}
@@ -382,14 +471,12 @@ export function RawSensorDisplay() {
               <Flame className="h-5 w-5 text-red-500" />
               <h3 className="font-semibold text-slate-900 dark:text-white">Gas/Khói</h3>
             </div>
-            {getStatusBadge(getDigitalSensorStatus(data.mq2))}
+            {getStatusBadge(getGasStatus(data.mq2))}
           </div>
           <div className="text-3xl font-bold mb-1 text-slate-900 dark:text-white">
-            {data.mq2 === 1 ? "PHÁT HIỆN" : "An toàn"}
+            {data.mq2 === 1 ? "⚠️ PHÁT HIỆN" : "An toàn"}
           </div>
-          <div className="text-xs text-slate-600 dark:text-slate-400">
-            Digital: {data.mq2}
-          </div>
+
         </Card>
       </div>
 

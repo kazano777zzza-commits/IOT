@@ -12,12 +12,25 @@ interface SensorResponse {
   success: boolean;
   timestamp: string;
   raw?: {
+    // Mapped data cho tương thích
     temp: number | null;
     hum: number | null;
     mq135: number;
     light: number;
     sound: number;
     mq2: number;
+    // Dữ liệu mở rộng từ Arduino
+    light_value?: number;
+    sound_value?: number;
+    mq2_value?: number;
+    mq135_alert?: number;
+    dht_ok?: number;
+    // Messages từ Arduino
+    sound_msg?: string;
+    light_msg?: string;
+    mq2_msg?: string;
+    mq135_msg?: string;
+    dht_msg?: string;
   };
   processed: ProcessedOutput;
   meta?: {

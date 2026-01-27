@@ -6,7 +6,7 @@ export default function ThoiGianThucPage() {
     <div className="space-y-6">
       <PageHeader
         title="Thời gian thực"
-        description="Dữ liệu RAW trực tiếp từ ESP8266 (http://192.168.4.1/data)"
+        description="Dữ liệu RAW trực tiếp từ Arduino qua ESP8266 (http://192.168.4.1/log)"
       />
       <RawSensorDisplay />
     </div>

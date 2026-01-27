@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { useTheme } from "@/providers/theme-provider";
 import {
   ArrowRight,
   BarChart3,
@@ -22,6 +23,8 @@ import {
   Gauge,
   Sparkles,
   Cpu,
+  Moon,
+  Sun,
 } from "lucide-react";
 
 interface RawSensorData {
@@ -37,17 +40,22 @@ export default function LandingPage() {
   const [data, setData] = useState<RawSensorData | null>(null);
   const [online, setOnline] = useState(false);
   const [loading, setLoading] = useState(true);
+  const { theme, toggleTheme } = useTheme();
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await fetch("http://192.168.4.1/data", {
+        const response = await fetch("/api/sensor-data", {
           cache: "no-store",
         });
         if (response.ok) {
-          const rawData = await response.json();
-          setData(rawData);
-          setOnline(true);
+          const result = await response.json();
+          if (result.success && result.raw) {
+            setData(result.raw);
+            setOnline(true);
+          } else {
+            setOnline(false);
+          }
         } else {
           setOnline(false);
         }
@@ -111,14 +119,25 @@ export default function LandingPage() {
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-600 to-cyan-500 flex items-center justify-center">
               <Zap className="w-5 h-5 text-white" />
             </div>
-            <span className="font-bold text-slate-900 dark:text-white">NamDuong IoT</span>
+            <span className="font-bold text-slate-900 dark:text-white">Nam Dương IoT</span>
           </Link>
           <div className="flex items-center gap-6">
-            <a href="#features" className="text-slate-600 dark:text-slate-400 hover:text-purple-600 dark:hover:text-purple-300 transition">Solutions</a>
-            <a href="#howworks" className="text-slate-600 dark:text-slate-400 hover:text-purple-600 dark:hover:text-purple-300 transition">How it Works</a>
+            <a href="#features" className="text-slate-700 dark:text-slate-300 hover:text-purple-600 dark:hover:text-purple-300 transition font-medium">Tính năng</a>
+            <a href="#howworks" className="text-slate-700 dark:text-slate-300 hover:text-purple-600 dark:hover:text-purple-300 transition font-medium">Cách hoạt động</a>
+            <button
+              onClick={toggleTheme}
+              className="p-2 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+              aria-label="Chuyển đổi giao diện"
+            >
+              {theme === "dark" ? (
+                <Sun className="w-5 h-5 text-yellow-500" />
+              ) : (
+                <Moon className="w-5 h-5 text-slate-700" />
+              )}
+            </button>
             <Link href="/thoi-gian-thuc">
               <Button className="bg-gradient-to-r from-purple-600 to-cyan-600 hover:from-purple-700 hover:to-cyan-700 text-white">
-                Dashboard
+                Vào Dashboard
               </Button>
             </Link>
           </div>
@@ -138,37 +157,37 @@ export default function LandingPage() {
           <div className="flex justify-center mb-8">
             <Badge className="bg-purple-600/20 dark:bg-purple-600/30 text-purple-700 dark:text-purple-200 border border-purple-600/40 dark:border-purple-500/50 px-4 py-2 text-sm">
               <Sparkles className="w-3 h-3 mr-2" />
-              2026 READY: AI-AUGMENTED DISPATCH
+              🚀 Giám sát môi trường thông minh 2026
             </Badge>
           </div>
 
           {/* Main Heading */}
           <h1 className="text-6xl sm:text-7xl font-bold text-slate-900 dark:text-white text-center mb-6 leading-tight">
-            Elevate IoT<br />
+            Hệ thống IoT<br />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-cyan-600 dark:from-purple-300 dark:to-cyan-300">
-              monitoring with intelligent
+              Giám sát Thông minh
             </span><br />
-            control.
+            Hiện đại
           </h1>
 
-          <p className="text-xl text-slate-600 dark:text-slate-300 text-center mb-10 max-w-2xl mx-auto leading-relaxed">
-            Built for Smart Spaces. Monitor, analyze, and optimize your environment with real-time sensor data and AI-powered insights.
+          <p className="text-xl text-slate-700 dark:text-slate-300 text-center mb-10 max-w-2xl mx-auto leading-relaxed">
+            Giám sát môi trường thời gian thực với 6 cảm biến thông minh. Phân tích dữ liệu và tối ưu hóa không gian làm việc của bạn.
           </p>
 
           {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16">
             <Link href="/thoi-gian-thuc">
               <Button className="bg-gradient-to-r from-purple-600 to-cyan-600 hover:from-purple-700 hover:to-cyan-700 text-white px-8 py-6 text-lg font-semibold flex items-center gap-2">
-                Get Started
+                Bắt đầu ngay
                 <ArrowRight className="w-5 h-5" />
               </Button>
             </Link>
             <Link href="/lich-su">
               <Button
                 variant="outline"
-                className="border border-purple-600/40 dark:border-purple-600/40 hover:bg-purple-100 dark:hover:bg-purple-950/50 text-slate-900 dark:text-white px-8 py-6 text-lg font-semibold flex items-center gap-2 dark:hover:text-white"
+                className="border-2 border-purple-600/40 dark:border-purple-600/40 hover:bg-purple-50 dark:hover:bg-purple-950/50 text-slate-900 dark:text-white px-8 py-6 text-lg font-semibold flex items-center gap-2 dark:hover:text-white"
               >
-                View Architecture
+                Xem lịch sử
                 <Gauge className="w-5 h-5" />
               </Button>
             </Link>
@@ -180,14 +199,14 @@ export default function LandingPage() {
               <Badge
                 className={`flex items-center gap-2 px-4 py-2 ${
                   online
-                    ? "bg-emerald-500/20 text-emerald-600 dark:text-emerald-300 border border-emerald-600/30 dark:border-emerald-600/30"
-                    : "bg-red-500/20 text-red-600 dark:text-red-300 border border-red-600/30 dark:border-red-600/30"
+                    ? "bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-600/30 dark:border-emerald-600/30"
+                    : "bg-red-500/20 text-red-700 dark:text-red-300 border border-red-600/30 dark:border-red-600/30"
                 }`}
               >
                 <div
                   className={`w-2 h-2 rounded-full ${online ? "bg-emerald-500 dark:bg-emerald-400 animate-pulse" : "bg-red-500 dark:bg-red-400"}`}
                 />
-                {online ? "All Systems Online" : "Connection Offline"}
+                {online ? "✅ Hệ thống đang hoạt động" : "⚠️ Chưa kết nối"}
               </Badge>
             </div>
           )}
@@ -198,23 +217,23 @@ export default function LandingPage() {
               <div className="bg-purple-500/5 dark:bg-purple-500/10 border border-purple-600/20 dark:border-purple-500/30 rounded-lg p-4 backdrop-blur-sm hover:bg-purple-500/10 dark:hover:bg-purple-500/20 transition">
                 <div className="flex items-center gap-3 mb-2">
                   <Thermometer className="w-5 h-5 text-red-500 dark:text-red-400" />
-                  <span className="text-slate-300 text-sm">Temperature</span>
+                  <span className="text-slate-700 dark:text-slate-300 text-sm">Nhiệt độ</span>
                 </div>
-                <div className="text-3xl font-bold text-white">{data.temp?.toFixed(1)}°C</div>
+                <div className="text-3xl font-bold text-slate-900 dark:text-white">{data.temp?.toFixed(1)}°C</div>
               </div>
-              <div className="bg-purple-500/10 border border-purple-500/30 rounded-lg p-4 backdrop-blur-sm hover:bg-purple-500/20 transition">
+              <div className="bg-purple-500/5 dark:bg-purple-500/10 border border-purple-600/20 dark:border-purple-500/30 rounded-lg p-4 backdrop-blur-sm hover:bg-purple-500/10 dark:hover:bg-purple-500/20 transition">
                 <div className="flex items-center gap-3 mb-2">
-                  <Droplets className="w-5 h-5 text-blue-400" />
-                  <span className="text-slate-300 text-sm">Humidity</span>
+                  <Droplets className="w-5 h-5 text-blue-500 dark:text-blue-400" />
+                  <span className="text-slate-700 dark:text-slate-300 text-sm">Độ ẩm</span>
                 </div>
                 <div className="text-3xl font-bold text-slate-900 dark:text-white">{data.hum?.toFixed(1)}%</div>
               </div>
               <div className="bg-purple-500/5 dark:bg-purple-500/10 border border-purple-600/20 dark:border-purple-500/30 rounded-lg p-4 backdrop-blur-sm hover:bg-purple-500/10 dark:hover:bg-purple-500/20 transition">
                 <div className="flex items-center gap-3 mb-2">
                   <Wind className="w-5 h-5 text-cyan-500 dark:text-cyan-400" />
-                  <span className="text-slate-600 dark:text-slate-300 text-sm">Air Quality</span>
+                  <span className="text-slate-700 dark:text-slate-300 text-sm">Không khí</span>
                 </div>
-                <div className="text-3xl font-bold text-slate-900 dark:text-white">{data.mq135}</div>
+                <div className="text-3xl font-bold text-slate-900 dark:text-white">{data.mq135} PPM</div>
               </div>
             </div>
           )}
@@ -227,10 +246,10 @@ export default function LandingPage() {
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-20">
             <h2 className="text-5xl font-bold text-slate-900 dark:text-white mb-4">
-              Comprehensive Monitoring
+              Giám sát Toàn diện
             </h2>
-            <p className="text-xl text-slate-400 max-w-2xl mx-auto">
-              Real-time sensors across 6 environmental parameters with AI-powered insights
+            <p className="text-xl text-slate-700 dark:text-slate-400 max-w-2xl mx-auto">
+              6 cảm biến thông minh theo dõi các thông số môi trường quan trọng
             </p>
           </div>
 
@@ -245,10 +264,10 @@ export default function LandingPage() {
                   <div className="p-3 bg-gradient-to-br from-purple-600/30 to-cyan-600/30 rounded-lg w-fit mb-4 group-hover:from-purple-600/50 group-hover:to-cyan-600/50 transition-all">
                     <Icon className="w-6 h-6 text-purple-300" />
                   </div>
-                  <h3 className="font-semibold text-white mb-2 text-lg">
+                  <h3 className="font-semibold text-slate-900 dark:text-white mb-2 text-lg">
                     {feature.title}
                   </h3>
-                  <p className="text-slate-400 text-sm leading-relaxed">
+                  <p className="text-slate-700 dark:text-slate-400 text-sm leading-relaxed">
                     {feature.description}
                   </p>
                 </div>
@@ -266,34 +285,34 @@ export default function LandingPage() {
             <div className="bg-purple-500/10 border border-purple-600/30 rounded-lg p-6 backdrop-blur-sm hover:bg-purple-500/20 transition">
               <div className="flex items-center gap-3 mb-3">
                 <CheckCircle className="w-5 h-5 text-emerald-400" />
-                <span className="text-slate-300 text-sm">Total Sensors</span>
+                <span className="text-slate-300 text-sm">Tổng cảm biến</span>
               </div>
               <div className="text-3xl font-bold text-white">6</div>
-              <p className="text-slate-500 text-xs mt-2">Active Monitoring</p>
+              <p className="text-slate-500 text-xs mt-2">Hoạt động 24/7</p>
             </div>
             <div className="bg-purple-500/10 border border-purple-600/30 rounded-lg p-6 backdrop-blur-sm hover:bg-purple-500/20 transition">
               <div className="flex items-center gap-3 mb-3">
                 <TrendingUp className="w-5 h-5 text-cyan-400" />
-                <span className="text-slate-300 text-sm">Update Rate</span>
+                <span className="text-slate-300 text-sm">Tần suất cập nhật</span>
               </div>
               <div className="text-3xl font-bold text-white">3s</div>
-              <p className="text-slate-500 text-xs mt-2">Real-time Sync</p>
+              <p className="text-slate-500 text-xs mt-2">Thời gian thực</p>
             </div>
             <div className="bg-purple-500/10 border border-purple-600/30 rounded-lg p-6 backdrop-blur-sm hover:bg-purple-500/20 transition">
               <div className="flex items-center gap-3 mb-3">
                 <Gauge className="w-5 h-5 text-purple-400" />
-                <span className="text-slate-300 text-sm">Accuracy</span>
+                <span className="text-slate-300 text-sm">Độ chính xác</span>
               </div>
               <div className="text-3xl font-bold text-white">±0.5°</div>
-              <p className="text-slate-500 text-xs mt-2">Temperature</p>
+              <p className="text-slate-500 text-xs mt-2">Nhiệt độ</p>
             </div>
             <div className="bg-purple-500/10 border border-purple-600/30 rounded-lg p-6 backdrop-blur-sm hover:bg-purple-500/20 transition">
               <div className="flex items-center gap-3 mb-3">
                 <Shield className="w-5 h-5 text-orange-400" />
-                <span className="text-slate-300 text-sm">Uptime</span>
+                <span className="text-slate-300 text-sm">Độ tin cậy</span>
               </div>
               <div className="text-3xl font-bold text-white">99%</div>
-              <p className="text-slate-500 text-xs mt-2">Reliability</p>
+              <p className="text-slate-500 text-xs mt-2">Uptime</p>
             </div>
           </div>
         </div>
@@ -305,10 +324,10 @@ export default function LandingPage() {
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-20">
             <h2 className="text-5xl font-bold text-white mb-4">
-              How It Works
+              Cách Hoạt động
             </h2>
             <p className="text-xl text-slate-400">
-              From data collection to intelligent insights
+              Từ thu thập dữ liệu đến phân tích thông minh
             </p>
           </div>
 
@@ -316,26 +335,26 @@ export default function LandingPage() {
             {[
               {
                 num: "1",
-                title: "Connect",
-                desc: "ESP8266 sensors transmit WiFi data",
+                title: "Kết nối",
+                desc: "ESP8266 thu thập dữ liệu qua WiFi",
                 icon: Cpu,
               },
               {
                 num: "2",
-                title: "Process",
-                desc: "Real-time data processing & analysis",
+                title: "Xử lý",
+                desc: "Xử lý và phân tích dữ liệu realtime",
                 icon: Zap,
               },
               {
                 num: "3",
-                title: "Display",
-                desc: "Live dashboard updates & insights",
+                title: "Hiển thị",
+                desc: "Dashboard cập nhật trực tiếp",
                 icon: TrendingUp,
               },
               {
                 num: "4",
-                title: "Alert",
-                desc: "Intelligent notifications & warnings",
+                title: "Cảnh báo",
+                desc: "Thông báo thông minh tự động",
                 icon: Shield,
               },
             ].map((step, idx) => {
@@ -367,15 +386,15 @@ export default function LandingPage() {
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(168,85,247,0.25),rgba(255,255,255,0))]" />
         <div className="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-5xl font-bold text-white mb-6">
-            Start Optimizing Today
+            Sẵn sàng Bắt đầu
           </h2>
           <p className="text-xl text-slate-300 mb-10 max-w-2xl mx-auto">
-            Gain complete control over your workspace environment with real-time monitoring and AI-powered insights.
+            Kiểm soát hoàn toàn môi trường làm việc với giám sát thời gian thực và cảnh báo thông minh.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link href="/thoi-gian-thuc">
               <Button className="bg-gradient-to-r from-purple-600 to-cyan-600 hover:from-purple-700 hover:to-cyan-700 text-white px-10 py-6 text-lg font-semibold">
-                Access Dashboard
+                Vào Dashboard
                 <ArrowRight className="w-5 h-5 ml-2" />
               </Button>
             </Link>
@@ -384,7 +403,7 @@ export default function LandingPage() {
                 variant="outline"
                 className="border border-purple-600/40 hover:bg-purple-950/50 text-white px-10 py-6 text-lg font-semibold"
               >
-                View History
+                Xem Lịch sử
               </Button>
             </Link>
           </div>
@@ -400,7 +419,7 @@ export default function LandingPage() {
                 <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-600 to-cyan-500 flex items-center justify-center">
                   <Zap className="w-5 h-5 text-white" />
                 </div>
-                <span className="font-bold text-slate-900 dark:text-white">NamDuong IoT</span>
+                <span className="font-bold text-slate-900 dark:text-white">Nam Dương IoT</span>
               </div>
               <p className="text-slate-600 dark:text-slate-400 text-sm">
                 Hệ thống giám sát môi trường thông minh cho không gian làm việc hiện đại.<br />

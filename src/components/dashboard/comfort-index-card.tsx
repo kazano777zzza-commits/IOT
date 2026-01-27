@@ -21,9 +21,17 @@ interface ComfortIndexCardProps {
     noise: number;
     gas: number;
   };
+  maxPoints?: {
+    temp: number;
+    humidity: number;
+    airQuality: number;
+    light: number;
+    noise: number;
+    gas: number;
+  };
 }
 
-export function ComfortIndexCard({ index, status, message, breakdown }: ComfortIndexCardProps) {
+export function ComfortIndexCard({ index, status, message, breakdown, maxPoints }: ComfortIndexCardProps) {
   const getStatusColor = () => {
     switch (status) {
       case 0: return "bg-green-600";
@@ -110,27 +118,27 @@ export function ComfortIndexCard({ index, status, message, breakdown }: ComfortI
         <div className="grid grid-cols-3 gap-2 text-xs">
           <div className="text-center p-2 bg-slate-100 dark:bg-slate-800 rounded">
             <div className="font-semibold text-slate-900 dark:text-slate-100">Nhiệt độ</div>
-            <div className="text-slate-600 dark:text-slate-400">{breakdown?.temp || 0} điểm</div>
+            <div className="text-slate-600 dark:text-slate-400">{breakdown?.temp || 0}/{maxPoints?.temp || 20} điểm</div>
           </div>
           <div className="text-center p-2 bg-slate-100 dark:bg-slate-800 rounded">
             <div className="font-semibold text-slate-900 dark:text-slate-100">Độ ẩm</div>
-            <div className="text-slate-600 dark:text-slate-400">{breakdown?.humidity || 0} điểm</div>
+            <div className="text-slate-600 dark:text-slate-400">{breakdown?.humidity || 0}/{maxPoints?.humidity || 20} điểm</div>
           </div>
           <div className="text-center p-2 bg-slate-100 dark:bg-slate-800 rounded">
             <div className="font-semibold text-slate-900 dark:text-slate-100">Không khí</div>
-            <div className="text-slate-600 dark:text-slate-400">{breakdown?.airQuality || 0} điểm</div>
+            <div className="text-slate-600 dark:text-slate-400">{breakdown?.airQuality || 0}/{maxPoints?.airQuality || 20} điểm</div>
           </div>
           <div className="text-center p-2 bg-slate-100 dark:bg-slate-800 rounded">
             <div className="font-semibold text-slate-900 dark:text-slate-100">Ánh sáng</div>
-            <div className="text-slate-600 dark:text-slate-400">{breakdown?.light || 0} điểm</div>
+            <div className="text-slate-600 dark:text-slate-400">{breakdown?.light || 0}/{maxPoints?.light || 15} điểm</div>
           </div>
           <div className="text-center p-2 bg-slate-100 dark:bg-slate-800 rounded">
             <div className="font-semibold text-slate-900 dark:text-slate-100">Tiếng ồn</div>
-            <div className="text-slate-600 dark:text-slate-400">{breakdown?.noise || 0} điểm</div>
+            <div className="text-slate-600 dark:text-slate-400">{breakdown?.noise || 0}/{maxPoints?.noise || 10} điểm</div>
           </div>
           <div className="text-center p-2 bg-slate-100 dark:bg-slate-800 rounded">
             <div className="font-semibold text-slate-900 dark:text-slate-100">Gas/Khói</div>
-            <div className="text-slate-600 dark:text-slate-400">{breakdown?.gas || 0} điểm</div>
+            <div className="text-slate-600 dark:text-slate-400">{breakdown?.gas || 0}/{maxPoints?.gas || 15} điểm</div>
           </div>
         </div>
 

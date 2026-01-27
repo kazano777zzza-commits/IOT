@@ -23,6 +23,7 @@ interface DeviceStatus {
   responseTime: number | null;
   totalRequests: number;
   errorCount: number;
+  successCount: number;
 }
 
 export default function ThietBiPage() {
@@ -32,36 +33,37 @@ export default function ThietBiPage() {
     responseTime: null,
     totalRequests: 0,
     errorCount: 0,
+    successCount: 0,
   });
   const [checking, setChecking] = useState(false);
+  const [latestData, setLatestData] = useState<any>(null);
 
   const checkConnection = async () => {
     setChecking(true);
     const startTime = Date.now();
 
     try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5000);
-
-      const response = await fetch("http://192.168.4.1/data", {
-        signal: controller.signal,
+      // Sử dụng API route thay vì gọi trực tiếp ESP8266
+      const response = await fetch("/api/sensor-data", {
         cache: "no-store",
       });
 
-      clearTimeout(timeoutId);
       const endTime = Date.now();
       const responseTime = endTime - startTime;
+      const result = await response.json();
 
-      if (response.ok) {
+      if (result.success) {
         setStatus((prev) => ({
           ...prev,
           online: true,
           lastSeen: new Date(),
           responseTime,
           totalRequests: prev.totalRequests + 1,
+          successCount: prev.successCount + 1,
         }));
+        setLatestData(result.raw);
       } else {
-        throw new Error("Response not OK");
+        throw new Error(result.error || "API Error");
       }
     } catch (error) {
       console.error("Connection check failed:", error);
@@ -69,6 +71,7 @@ export default function ThietBiPage() {
         ...prev,
         online: false,
         responseTime: null,
+        totalRequests: prev.totalRequests + 1,
         errorCount: prev.errorCount + 1,
       }));
     } finally {
@@ -372,6 +375,56 @@ export default function ThietBiPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Live Sensor Data Preview */}
+      {status.online && latestData && (
+        <Card className="border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
+          <CardHeader>
+            <CardTitle className="text-lg text-slate-900 dark:text-white flex items-center gap-2">
+              <Activity className="h-5 w-5 text-green-500 animate-pulse" />
+              Dữ liệu sensor trực tiếp
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+              <div className="text-center p-3 bg-orange-50 dark:bg-orange-900/20 rounded-lg">
+                <div className="text-xl font-bold text-orange-600">
+                  {latestData.temp !== null ? `${latestData.temp}°C` : "N/A"}
+                </div>
+                <div className="text-xs text-slate-600 dark:text-slate-400">Nhiệt độ</div>
+              </div>
+              <div className="text-center p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                <div className="text-xl font-bold text-blue-600">
+                  {latestData.hum !== null ? `${latestData.hum}%` : "N/A"}
+                </div>
+                <div className="text-xs text-slate-600 dark:text-slate-400">Độ ẩm</div>
+              </div>
+              <div className="text-center p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                <div className="text-xl font-bold text-green-600">{latestData.mq135}</div>
+                <div className="text-xs text-slate-600 dark:text-slate-400">MQ135</div>
+              </div>
+              <div className="text-center p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
+                <div className="text-xl font-bold text-yellow-600">
+                  {latestData.light === 0 ? "Sáng" : "Tối"}
+                </div>
+                <div className="text-xs text-slate-600 dark:text-slate-400">Ánh sáng</div>
+              </div>
+              <div className="text-center p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
+                <div className="text-xl font-bold text-purple-600">
+                  {latestData.sound === 1 ? "Ồn" : "Yên tĩnh"}
+                </div>
+                <div className="text-xs text-slate-600 dark:text-slate-400">Tiếng ồn</div>
+              </div>
+              <div className="text-center p-3 bg-red-50 dark:bg-red-900/20 rounded-lg">
+                <div className="text-xl font-bold text-red-600">
+                  {latestData.mq2 === 1 ? "⚠️ Phát hiện" : "An toàn"}
+                </div>
+                <div className="text-xs text-slate-600 dark:text-slate-400">Gas/Khói</div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

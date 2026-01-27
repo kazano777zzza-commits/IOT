@@ -24,7 +24,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsi
 export default function LichSuPage() {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [records, setRecords] = useState<SensorHistoryRecord[]>([]);
-  const [hourlyStats, setHourlyStats] = useState<any[]>([]);
+  const [minutelyStats, setMinutelyStats] = useState<any[]>([]);
   const [totalCount, setTotalCount] = useState(0);
 
   useEffect(() => {
@@ -35,8 +35,8 @@ export default function LichSuPage() {
     const dayRecords = HistoryStorage.getByDate(selectedDate);
     setRecords(dayRecords);
     
-    const stats = HistoryStorage.getHourlyStats(selectedDate);
-    setHourlyStats(stats);
+    const stats = HistoryStorage.getMinuteStats(selectedDate);
+    setMinutelyStats(stats);
     
     setTotalCount(HistoryStorage.getCount());
   };
@@ -109,110 +109,323 @@ export default function LichSuPage() {
       </Card>
 
       {/* Charts */}
-      {hourlyStats.length > 0 && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Temperature Chart */}
-          <Card className="border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
-            <CardHeader>
-              <CardTitle className="text-lg text-slate-900 dark:text-white">Nhiệt độ theo giờ</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={250}>
-                <LineChart data={hourlyStats}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="currentColor" />
-                  <XAxis 
-                    dataKey="hour" 
-                    label={{ value: "Giờ", position: "insideBottom", offset: -5 }}
-                    stroke="currentColor"
-                  />
-                  <YAxis label={{ value: "°C", angle: -90, position: "insideLeft" }} stroke="currentColor" />
-                  <Tooltip 
-                    formatter={(value: any) => value !== null ? `${value.toFixed(1)}°C` : "N/A"}
-                    labelFormatter={(label) => `Giờ ${label}:00`}
-                    contentStyle={{ backgroundColor: "#1e293b", border: "1px solid #475569", borderRadius: "8px", color: "#e2e8f0" }}
-                  />
-                  <Legend />
-                  <Line 
-                    type="monotone" 
-                    dataKey="avgTemp" 
-                    stroke="#f97316" 
-                    name="Nhiệt độ TB"
-                    strokeWidth={2}
-                    dot={{ r: 4 }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
+      {minutelyStats.length > 0 && (
+        <>
+          {/* Row 1: Nhiệt độ và Độ ẩm */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Temperature Chart */}
+            <Card className="border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-lg text-slate-900 dark:text-white flex items-center gap-2">
+                  🌡️ Nhiệt độ trung bình theo phút
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={280}>
+                  <LineChart data={minutelyStats}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} />
+                    <XAxis 
+                      dataKey="minute" 
+                      stroke="#9ca3af"
+                      fontSize={10}
+                      interval="preserveStartEnd"
+                      tickCount={10}
+                    />
+                    <YAxis 
+                      domain={['dataMin - 2', 'dataMax + 2']}
+                      stroke="#9ca3af"
+                      fontSize={12}
+                      tickFormatter={(v) => `${v}°`}
+                    />
+                    <Tooltip 
+                      formatter={(value: any) => value !== null ? [`${value.toFixed(1)}°C`, "Nhiệt độ TB"] : ["N/A", "Nhiệt độ TB"]}
+                      labelFormatter={(label) => `Phút ${label}`}
+                      contentStyle={{ backgroundColor: "#1e293b", border: "1px solid #475569", borderRadius: "8px", color: "#f8fafc" }}
+                    />
+                    <Line 
+                      type="monotone" 
+                      dataKey="avgTemp" 
+                      stroke="#f97316" 
+                      strokeWidth={2}
+                      dot={false}
+                      activeDot={{ r: 5 }}
+                      connectNulls
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+                <div className="text-xs text-center text-slate-500 mt-2">Ngưỡng tốt: 22-28°C</div>
+              </CardContent>
+            </Card>
 
-          {/* Humidity Chart */}
-          <Card className="border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
-            <CardHeader>
-              <CardTitle className="text-lg text-slate-900 dark:text-white">Độ ẩm theo giờ</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={250}>
-                <LineChart data={hourlyStats}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="currentColor" />
-                  <XAxis 
-                    dataKey="hour" 
-                    label={{ value: "Giờ", position: "insideBottom", offset: -5 }}
-                    stroke="currentColor"
-                  />
-                  <YAxis label={{ value: "%", angle: -90, position: "insideLeft" }} stroke="currentColor" />
-                  <Tooltip 
-                    formatter={(value: any) => value !== null ? `${value.toFixed(1)}%` : "N/A"}
-                    labelFormatter={(label) => `Giờ ${label}:00`}
-                    contentStyle={{ backgroundColor: "#1e293b", border: "1px solid #475569", borderRadius: "8px", color: "#e2e8f0" }}
-                  />
-                  <Legend />
-                  <Line 
-                    type="monotone" 
-                    dataKey="avgHum" 
-                    stroke="#3b82f6" 
-                    name="Độ ẩm TB"
-                    strokeWidth={2}
-                    dot={{ r: 4 }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
+            {/* Humidity Chart */}
+            <Card className="border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-lg text-slate-900 dark:text-white flex items-center gap-2">
+                  💧 Độ ẩm trung bình theo phút
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={280}>
+                  <LineChart data={minutelyStats}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} />
+                    <XAxis 
+                      dataKey="minute" 
+                      stroke="#9ca3af"
+                      fontSize={10}
+                      interval="preserveStartEnd"
+                      tickCount={10}
+                    />
+                    <YAxis 
+                      domain={[0, 100]}
+                      stroke="#9ca3af"
+                      fontSize={12}
+                      tickFormatter={(v) => `${v}%`}
+                    />
+                    <Tooltip 
+                      formatter={(value: any) => value !== null ? [`${value.toFixed(1)}%`, "Độ ẩm TB"] : ["N/A", "Độ ẩm TB"]}
+                      labelFormatter={(label) => `Phút ${label}`}
+                      contentStyle={{ backgroundColor: "#1e293b", border: "1px solid #475569", borderRadius: "8px", color: "#f8fafc" }}
+                    />
+                    <Line 
+                      type="monotone" 
+                      dataKey="avgHum" 
+                      stroke="#3b82f6" 
+                      strokeWidth={2}
+                      dot={false}
+                      activeDot={{ r: 5 }}
+                      connectNulls
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+                <div className="text-xs text-center text-slate-500 mt-2">Ngưỡng tốt: 40-60%</div>
+              </CardContent>
+            </Card>
+          </div>
 
-          {/* Air Quality Chart */}
-          <Card className="lg:col-span-2 border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
-            <CardHeader>
-              <CardTitle className="text-lg text-slate-900 dark:text-white">Chất lượng không khí theo giờ</CardTitle>
+          {/* Row 2: Chất lượng không khí - Full width */}
+          <Card className="border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg text-slate-900 dark:text-white flex items-center gap-2">
+                💨 Chất lượng không khí (MQ135) theo phút
+              </CardTitle>
             </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={250}>
-                <LineChart data={hourlyStats}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="currentColor" />
+              <ResponsiveContainer width="100%" height={280}>
+                <LineChart data={minutelyStats}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} />
                   <XAxis 
-                    dataKey="hour" 
-                    label={{ value: "Giờ", position: "insideBottom", offset: -5 }}
-                    stroke="currentColor"
+                    dataKey="minute" 
+                    stroke="#9ca3af"
+                    fontSize={10}
+                    interval="preserveStartEnd"
+                    tickCount={10}
                   />
-                  <YAxis label={{ value: "PPM", angle: -90, position: "insideLeft" }} stroke="currentColor" />
+                  <YAxis 
+                    domain={[0, 'dataMax + 50']}
+                    stroke="#9ca3af"
+                    fontSize={12}
+                  />
                   <Tooltip 
-                    formatter={(value: any) => `${value.toFixed(0)} PPM`}
-                    labelFormatter={(label) => `Giờ ${label}:00`}
-                    contentStyle={{ backgroundColor: "#1e293b", border: "1px solid #475569", borderRadius: "8px", color: "#e2e8f0" }}
+                    formatter={(value: any) => [`${value.toFixed(0)} PPM`, "MQ135 TB"]}
+                    labelFormatter={(label) => `Phút ${label}`}
+                    contentStyle={{ backgroundColor: "#1e293b", border: "1px solid #475569", borderRadius: "8px", color: "#f8fafc" }}
                   />
-                  <Legend />
                   <Line 
                     type="monotone" 
                     dataKey="avgMq135" 
                     stroke="#22c55e" 
-                    name="MQ135 TB"
                     strokeWidth={2}
-                    dot={{ r: 4 }}
+                    dot={false}
+                    activeDot={{ r: 5 }}
+                    connectNulls
                   />
                 </LineChart>
               </ResponsiveContainer>
+              <div className="text-xs text-center text-slate-500 mt-2">
+                Tốt: &lt;300 | Bình thường: 300-450 | Trung bình: 450-600 | Xấu: &gt;600
+              </div>
             </CardContent>
           </Card>
-        </div>
+
+          {/* Row 3: Ánh sáng, Tiếng ồn, Gas */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Light Events */}
+            <Card className="border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-lg text-slate-900 dark:text-white flex items-center gap-2">
+                  💡 Tình trạng ánh sáng theo phút
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={200}>
+                  <LineChart data={minutelyStats}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} />
+                    <XAxis 
+                      dataKey="minute" 
+                      stroke="#9ca3af"
+                      fontSize={10}
+                      interval="preserveStartEnd"
+                    />
+                    <YAxis 
+                      domain={[0, 100]}
+                      stroke="#9ca3af"
+                      fontSize={11}
+                      tickFormatter={(v) => `${v}%`}
+                    />
+                    <Tooltip 
+                      formatter={(value: any) => [`${value.toFixed(0)}%`, "Thời gian thiếu sáng"]}
+                      labelFormatter={(label) => `Phút ${label}`}
+                      contentStyle={{ backgroundColor: "#1e293b", border: "1px solid #475569", borderRadius: "8px", color: "#f8fafc" }}
+                    />
+                    <Line 
+                      type="stepAfter" 
+                      dataKey="lightPercent" 
+                      stroke="#eab308" 
+                      strokeWidth={2}
+                      dot={false}
+                      connectNulls
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+                <div className="text-xs text-center text-slate-500 mt-2">% thời gian thiếu sáng trong phút</div>
+              </CardContent>
+            </Card>
+
+            {/* Noise Events */}
+            <Card className="border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-lg text-slate-900 dark:text-white flex items-center gap-2">
+                  🔊 Tiếng ồn theo phút
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={200}>
+                  <LineChart data={minutelyStats}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} />
+                    <XAxis 
+                      dataKey="minute" 
+                      stroke="#9ca3af"
+                      fontSize={10}
+                      interval="preserveStartEnd"
+                    />
+                    <YAxis 
+                      domain={[0, 100]}
+                      stroke="#9ca3af"
+                      fontSize={11}
+                      tickFormatter={(v) => `${v}%`}
+                    />
+                    <Tooltip 
+                      formatter={(value: any) => [`${value.toFixed(0)}%`, "Thời gian có tiếng ồn"]}
+                      labelFormatter={(label) => `Phút ${label}`}
+                      contentStyle={{ backgroundColor: "#1e293b", border: "1px solid #475569", borderRadius: "8px", color: "#f8fafc" }}
+                    />
+                    <Line 
+                      type="stepAfter" 
+                      dataKey="soundPercent" 
+                      stroke="#a855f7" 
+                      strokeWidth={2}
+                      dot={false}
+                      connectNulls
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+                <div className="text-xs text-center text-slate-500 mt-2">% thời gian có tiếng ồn trong phút</div>
+              </CardContent>
+            </Card>
+
+            {/* Gas Events */}
+            <Card className="border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-lg text-slate-900 dark:text-white flex items-center gap-2">
+                  🔥 Phát hiện Gas/Khói theo phút
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={200}>
+                  <LineChart data={minutelyStats}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} />
+                    <XAxis 
+                      dataKey="minute" 
+                      stroke="#9ca3af"
+                      fontSize={10}
+                      interval="preserveStartEnd"
+                    />
+                    <YAxis 
+                      domain={[0, 'dataMax + 1']}
+                      stroke="#9ca3af"
+                      fontSize={11}
+                      allowDecimals={false}
+                    />
+                    <Tooltip 
+                      formatter={(value: any) => [`${value} lần`, "Số lần phát hiện"]}
+                      labelFormatter={(label) => `Phút ${label}`}
+                      contentStyle={{ backgroundColor: "#1e293b", border: "1px solid #475569", borderRadius: "8px", color: "#f8fafc" }}
+                    />
+                    <Line 
+                      type="stepAfter" 
+                      dataKey="gasCount" 
+                      stroke="#ef4444" 
+                      strokeWidth={2}
+                      dot={false}
+                      connectNulls
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+                <div className="text-xs text-center text-slate-500 mt-2">Số lần phát hiện gas/khói trong phút</div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Row 4: Summary Stats */}
+          <Card className="border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg text-slate-900 dark:text-white">📊 Thống kê tổng hợp trong ngày</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                {(() => {
+                  const validTemps = minutelyStats.filter((s: any) => s.avgTemp !== null);
+                  const validHums = minutelyStats.filter((s: any) => s.avgHum !== null);
+                  const avgTemp = validTemps.length > 0 ? validTemps.reduce((a: number, b: any) => a + b.avgTemp, 0) / validTemps.length : null;
+                  const avgHum = validHums.length > 0 ? validHums.reduce((a: number, b: any) => a + b.avgHum, 0) / validHums.length : null;
+                  const avgMq135 = minutelyStats.length > 0 ? minutelyStats.reduce((a: number, b: any) => a + (b.avgMq135 || 0), 0) / minutelyStats.length : 0;
+                  const totalGas = minutelyStats.reduce((a: number, b: any) => a + (b.gasCount || 0), 0);
+                  const avgLight = minutelyStats.length > 0 ? minutelyStats.reduce((a: number, b: any) => a + (b.lightPercent || 0), 0) / minutelyStats.length : 0;
+                  const avgSound = minutelyStats.length > 0 ? minutelyStats.reduce((a: number, b: any) => a + (b.soundPercent || 0), 0) / minutelyStats.length : 0;
+
+                  return (
+                    <>
+                      <div className="text-center p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg">
+                        <div className="text-2xl font-bold text-orange-600">{avgTemp !== null ? `${avgTemp.toFixed(1)}°C` : "N/A"}</div>
+                        <div className="text-xs text-slate-600 dark:text-slate-400">Nhiệt độ TB</div>
+                      </div>
+                      <div className="text-center p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                        <div className="text-2xl font-bold text-blue-600">{avgHum !== null ? `${avgHum.toFixed(1)}%` : "N/A"}</div>
+                        <div className="text-xs text-slate-600 dark:text-slate-400">Độ ẩm TB</div>
+                      </div>
+                      <div className="text-center p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                        <div className="text-2xl font-bold text-green-600">{avgMq135.toFixed(0)}</div>
+                        <div className="text-xs text-slate-600 dark:text-slate-400">MQ135 TB</div>
+                      </div>
+                      <div className="text-center p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
+                        <div className="text-2xl font-bold text-yellow-600">{avgLight.toFixed(0)}%</div>
+                        <div className="text-xs text-slate-600 dark:text-slate-400">Thiếu sáng TB</div>
+                      </div>
+                      <div className="text-center p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
+                        <div className="text-2xl font-bold text-purple-600">{avgSound.toFixed(0)}%</div>
+                        <div className="text-xs text-slate-600 dark:text-slate-400">Tiếng ồn TB</div>
+                      </div>
+                      <div className="text-center p-4 bg-red-50 dark:bg-red-900/20 rounded-lg">
+                        <div className="text-2xl font-bold text-red-600">{totalGas}</div>
+                        <div className="text-xs text-slate-600 dark:text-slate-400">Lần phát hiện gas</div>
+                      </div>
+                    </>
+                  );
+                })()}
+              </div>
+            </CardContent>
+          </Card>
+        </>
       )}
 
       {/* Data Table */}

@@ -92,13 +92,72 @@ export class HistoryStorage {
   }
 
   /**
-   * Thống kê theo giờ
+   * Thống kê theo phút - bao gồm tất cả các chỉ số
+   */
+  static getMinuteStats(date: Date): Array<{
+    time: string;         // Format: "HH:mm"
+    minute: number;       // Số phút trong ngày (0-1439)
+    avgTemp: number | null;
+    avgHum: number | null;
+    avgMq135: number;
+    lightPercent: number;
+    soundPercent: number;
+    gasCount: number;
+    count: number;
+  }> {
+    const records = this.getByDate(date);
+    const minuteData: Record<string, SensorHistoryRecord[]> = {};
+
+    // Group by minute (HH:mm)
+    records.forEach((record) => {
+      const d = new Date(record.timestamp);
+      const timeKey = `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
+      if (!minuteData[timeKey]) minuteData[timeKey] = [];
+      minuteData[timeKey].push(record);
+    });
+
+    // Calculate averages and percentages
+    return Object.entries(minuteData).map(([time, records]) => {
+      const validTemps = records.filter((r) => r.temp !== null).map((r) => r.temp!);
+      const validHums = records.filter((r) => r.hum !== null).map((r) => r.hum!);
+      const mq135Values = records.map((r) => r.mq135);
+      
+      const lightOnCount = records.filter((r) => r.light === 1).length;
+      const lightPercent = (lightOnCount / records.length) * 100;
+      
+      const soundOnCount = records.filter((r) => r.sound === 1).length;
+      const soundPercent = (soundOnCount / records.length) * 100;
+      
+      const gasCount = records.filter((r) => r.mq2 === 1).length;
+
+      const [hours, mins] = time.split(':').map(Number);
+      const minuteOfDay = hours * 60 + mins;
+
+      return {
+        time,
+        minute: minuteOfDay,
+        avgTemp: validTemps.length > 0 ? validTemps.reduce((a, b) => a + b, 0) / validTemps.length : null,
+        avgHum: validHums.length > 0 ? validHums.reduce((a, b) => a + b, 0) / validHums.length : null,
+        avgMq135: mq135Values.length > 0 ? mq135Values.reduce((a, b) => a + b, 0) / mq135Values.length : 0,
+        lightPercent,
+        soundPercent,
+        gasCount,
+        count: records.length,
+      };
+    }).sort((a, b) => a.minute - b.minute);
+  }
+
+  /**
+   * Thống kê theo giờ - bao gồm tất cả các chỉ số (giữ lại để tương thích)
    */
   static getHourlyStats(date: Date): Array<{
     hour: number;
     avgTemp: number | null;
     avgHum: number | null;
     avgMq135: number;
+    lightPercent: number;   // % thời gian thiếu sáng (light=1)
+    soundPercent: number;   // % thời gian có tiếng ồn (sound=1)
+    gasCount: number;       // Số lần phát hiện gas (mq2=1)
     count: number;
   }> {
     const records = this.getByDate(date);
@@ -111,17 +170,31 @@ export class HistoryStorage {
       hourlyData[hour].push(record);
     });
 
-    // Calculate averages
+    // Calculate averages and percentages
     return Object.entries(hourlyData).map(([hour, records]) => {
       const validTemps = records.filter((r) => r.temp !== null).map((r) => r.temp!);
       const validHums = records.filter((r) => r.hum !== null).map((r) => r.hum!);
       const mq135Values = records.map((r) => r.mq135);
+      
+      // Tính % thời gian thiếu sáng (light=1 là thiếu sáng)
+      const lightOnCount = records.filter((r) => r.light === 1).length;
+      const lightPercent = (lightOnCount / records.length) * 100;
+      
+      // Tính % thời gian có tiếng ồn (sound=1 là có tiếng ồn)
+      const soundOnCount = records.filter((r) => r.sound === 1).length;
+      const soundPercent = (soundOnCount / records.length) * 100;
+      
+      // Đếm số lần phát hiện gas (mq2=1)
+      const gasCount = records.filter((r) => r.mq2 === 1).length;
 
       return {
         hour: parseInt(hour),
         avgTemp: validTemps.length > 0 ? validTemps.reduce((a, b) => a + b, 0) / validTemps.length : null,
         avgHum: validHums.length > 0 ? validHums.reduce((a, b) => a + b, 0) / validHums.length : null,
-        avgMq135: mq135Values.reduce((a, b) => a + b, 0) / mq135Values.length,
+        avgMq135: mq135Values.length > 0 ? mq135Values.reduce((a, b) => a + b, 0) / mq135Values.length : 0,
+        lightPercent,
+        soundPercent,
+        gasCount,
         count: records.length,
       };
     }).sort((a, b) => a.hour - b.hour);

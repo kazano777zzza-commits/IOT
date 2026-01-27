@@ -134,35 +134,56 @@ export function AlertNotificationSystem({
 }
 
 /**
- * Hook to manage alerts
+ * Hook to manage alerts - CHỈ HIỆN 1 CẢNH BÁO DUY NHẤT
  */
 export function useAlerts() {
   const [alerts, setAlerts] = useState<AlertNotification[]>([]);
+  const [currentDangerType, setCurrentDangerType] = useState<string | null>(null);
 
+  // Thêm cảnh báo - chỉ giữ 1 cảnh báo danger tại một thời điểm
   const addAlert = (
     type: "success" | "warning" | "danger",
     title: string,
     message: string,
-    autoClose?: number
+    dangerKey?: string // Key để xác định loại nguy hiểm (gas, temp, air)
   ) => {
+    // Nếu là danger và đã có cùng loại danger đang hiển thị -> bỏ qua
+    if (type === "danger" && dangerKey && currentDangerType === dangerKey) {
+      return;
+    }
+
+    // Nếu là danger mới, xóa hết alert cũ và set loại danger mới
+    if (type === "danger" && dangerKey) {
+      setCurrentDangerType(dangerKey);
+      setAlerts([]); // Xóa alert cũ
+    }
+
     const newAlert: AlertNotification = {
-      id: crypto.randomUUID(),
+      id: dangerKey || crypto.randomUUID(),
       type,
       title,
       message,
       timestamp: new Date(),
-      autoClose: autoClose || (type === "success" ? 5000 : undefined),
+      autoClose: type === "success" ? 5000 : undefined,
     };
 
-    setAlerts((prev) => [...prev, newAlert]);
+    setAlerts([newAlert]); // Chỉ giữ 1 alert
+  };
+
+  // Xóa cảnh báo khi hết nguy hiểm
+  const clearDanger = () => {
+    setCurrentDangerType(null);
+    setAlerts([]);
   };
 
   const dismissAlert = (id: string) => {
     setAlerts((prev) => prev.filter((alert) => alert.id !== id));
+    setCurrentDangerType(null);
   };
 
   const clearAlerts = () => {
     setAlerts([]);
+    setCurrentDangerType(null);
   };
 
   return {
@@ -170,5 +191,7 @@ export function useAlerts() {
     addAlert,
     dismissAlert,
     clearAlerts,
+    clearDanger,
+    currentDangerType,
   };
 }
