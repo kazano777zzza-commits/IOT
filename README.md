@@ -8,6 +8,6 @@ Gồm **phần cứng (ESP8266 + cảm biến)** và **Web Dashboard (Next.js + 
 ## 1) Tổng quan kiến trúc
 
 - **ESP8266** đọc cảm biến → phát **WiFi AP** hoặc kết nối WiFi (tùy cấu hình)  
-- ESP cung cấp API **HTTP `/data`** trả JSON realtime:
+- ESP cung cấp API **HTTP `/log`** trả JSON realtime:
   ```json
   {"temp":22.2,"hum":74.2,"mq135":1,"light":0,"sound":0,"mq2":0}
