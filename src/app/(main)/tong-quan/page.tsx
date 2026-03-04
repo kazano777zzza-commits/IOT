@@ -5,7 +5,6 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { useTheme } from "@/providers/theme-provider";
 import {
   ArrowRight,
   BarChart3,
@@ -23,8 +22,6 @@ import {
   Gauge,
   Sparkles,
   Cpu,
-  Moon,
-  Sun,
 } from "lucide-react";
 
 interface RawSensorData {
@@ -40,7 +37,6 @@ export default function LandingPage() {
   const [data, setData] = useState<RawSensorData | null>(null);
   const [online, setOnline] = useState(false);
   const [loading, setLoading] = useState(true);
-  const { theme, toggleTheme } = useTheme();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -124,17 +120,6 @@ export default function LandingPage() {
           <div className="flex items-center gap-6">
             <a href="#features" className="text-slate-700 dark:text-slate-300 hover:text-purple-600 dark:hover:text-purple-300 transition font-medium">Tính năng</a>
             <a href="#howworks" className="text-slate-700 dark:text-slate-300 hover:text-purple-600 dark:hover:text-purple-300 transition font-medium">Cách hoạt động</a>
-            <button
-              onClick={toggleTheme}
-              className="p-2 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
-              aria-label="Chuyển đổi giao diện"
-            >
-              {theme === "dark" ? (
-                <Sun className="w-5 h-5 text-yellow-500" />
-              ) : (
-                <Moon className="w-5 h-5 text-slate-700" />
-              )}
-            </button>
             <Link href="/thoi-gian-thuc">
               <Button className="bg-gradient-to-r from-purple-600 to-cyan-600 hover:from-purple-700 hover:to-cyan-700 text-white">
                 Vào Dashboard

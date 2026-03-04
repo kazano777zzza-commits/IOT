@@ -1,41 +1,77 @@
 /**
  * API Route: GET /api/sensor-data
- * Fetch từ Arduino qua ESP8266 (http://192.168.4.1/log) và xử lý realtime
+ * ✅ Đọc dữ liệu từ Serial Bridge Server (chạy riêng)
  * 
- * Format dữ liệu từ Arduino:
- * {
- *   "sound": 0|1, "sound_value": number, "sound_msg": string,
- *   "light": 0|1, "light_value": number, "light_msg": string,
- *   "mq2": 0|1, "mq2_value": number, "mq2_msg": string,
- *   "mq135": 0|1, "mq135_value": number, "mq135_msg": string,
- *   "dht_ok": 0|1, "temp": number, "hum": number, "dht_msg": string
- * }
+ * Serial Bridge Server: node serial-bridge.js
+ * Bridge API: http://localhost:3001/data
  */
 
 import { NextResponse } from "next/server";
 import { getSensorProcessor, type SensorInput } from "@/lib/sensor-processor";
 
-const ESP8266_URL = "http://192.168.4.1/log";
-const TIMEOUT_MS = 5000;
+// Telegram service (dynamic import to avoid build issues)
+let telegramService: any = null;
+let telegramInitialized = false;
+
+async function initTelegram() {
+  if (telegramInitialized) return;
+  
+  try {
+    const token = process.env.TELEGRAM_BOT_TOKEN;
+    const chatId = process.env.TELEGRAM_CHAT_ID;
+    
+    if (token && chatId) {
+      const { initTelegramService } = await import('@/lib/telegram-service');
+      telegramService = initTelegramService(token, chatId);
+      await telegramService.testConnection();
+    }
+    telegramInitialized = true;
+  } catch (error) {
+    console.error('⚠️ Không thể khởi tạo Telegram:', error);
+    telegramInitialized = true; // Đánh dấu đã thử init
+  }
+}
+
+// URL của Serial Bridge Server (chạy riêng với Next.js)
+const BRIDGE_URL = process.env.BRIDGE_URL || "http://localhost:3001/data";
+const TIMEOUT_MS = 3000;
+
+/**
+ * Fetch dữ liệu từ Serial Bridge Server
+ */
+async function fetchFromBridge(): Promise<SensorInput> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
+
+  const response = await fetch(BRIDGE_URL, {
+    signal: controller.signal,
+    cache: "no-store",
+  });
+
+  clearTimeout(timeoutId);
+
+  if (!response.ok) {
+    throw new Error(`Bridge server returned status ${response.status}`);
+  }
+
+  const result = await response.json();
+  
+  if (!result.success) {
+    throw new Error(result.message || 'Bridge server error');
+  }
+
+  return result;
+}
 
 export async function GET() {
   try {
-    // Fetch data từ ESP8266
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
-
-    const response = await fetch(ESP8266_URL, {
-      signal: controller.signal,
-      cache: "no-store",
-    });
-
-    clearTimeout(timeoutId);
-
-    if (!response.ok) {
-      throw new Error(`ESP8266 returned status ${response.status}`);
+    // Khởi tạo Telegram nếu chưa
+    if (!telegramInitialized) {
+      await initTelegram();
     }
 
-    const rawData: SensorInput = await response.json();
+    // Fetch data từ Bridge Server
+    const rawData: SensorInput = await fetchFromBridge();
 
     // Validate input - kiểm tra các trường bắt buộc
     if (typeof rawData.sound !== "number" || 
@@ -61,6 +97,15 @@ export async function GET() {
     console.log(`  Raw: T=${rawData.temp}°C H=${rawData.hum}% MQ135=${rawData.mq135_value} DHT_OK=${rawData.dht_ok}`);
     console.log(`  Room Status: ${result.room_status} | Comfort: ${result.comfort_index}`);
     console.log(`  Message: ${result.message}`);
+
+    // ✅ Kiểm tra và gửi cảnh báo Telegram nếu cần
+    if (telegramService) {
+      try {
+        await telegramService.checkAndSendAlerts(result, rawData);
+      } catch (telegramError) {
+        console.error('⚠️ Lỗi gửi Telegram alert:', telegramError);
+      }
+    }
 
     return NextResponse.json({
       success: true,
