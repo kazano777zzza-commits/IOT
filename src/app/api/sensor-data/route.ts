@@ -1,13 +1,15 @@
 /**
  * API Route: GET /api/sensor-data
  * ✅ Đọc dữ liệu từ Serial Bridge Server (chạy riêng)
- * 
+ * ✅ Lưu mỗi bản đọc vào Supabase PostgreSQL
+ *
  * Serial Bridge Server: node serial-bridge.js
  * Bridge API: http://localhost:3001/data
  */
 
 import { NextResponse } from "next/server";
 import { getSensorProcessor, type SensorInput } from "@/lib/sensor-processor";
+import { saveReading } from "@/lib/db-storage";
 
 // Telegram service (dynamic import to avoid build issues)
 let telegramService: any = null;
@@ -106,6 +108,11 @@ export async function GET() {
         console.error('⚠️ Lỗi gửi Telegram alert:', telegramError);
       }
     }
+
+    // ✅ Lưu dữ liệu vào Supabase (fire-and-forget, không block response)
+    saveReading(rawData, result).catch((dbErr) => {
+      console.error('⚠️ [DB] Lỗi lưu Supabase (non-blocking):', dbErr?.message ?? dbErr);
+    });
 
     return NextResponse.json({
       success: true,

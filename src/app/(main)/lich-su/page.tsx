@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import PageHeader from "@/components/shared/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -15,46 +15,56 @@ import {
 } from "@/components/ui/table";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { HistoryStorage, type SensorHistoryRecord } from "@/lib/history-storage";
-import { Download, Calendar as CalendarIcon, Trash2, Database } from "lucide-react";
+import type { SensorHistoryRow } from "@/lib/supabase";
+import { getByDate, getMinuteStats, getTotalCount, exportCSV, clearAll } from "@/lib/db-storage";
+import { Download, Calendar as CalendarIcon, Trash2, Database, RefreshCw } from "lucide-react";
 import { format } from "date-fns";
 import { vi } from "date-fns/locale";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 
 export default function LichSuPage() {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const [records, setRecords] = useState<SensorHistoryRecord[]>([]);
+  const [records, setRecords] = useState<SensorHistoryRow[]>([]);
   const [minutelyStats, setMinutelyStats] = useState<any[]>([]);
   const [totalCount, setTotalCount] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const loadData = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const [dayRecords, stats, total] = await Promise.all([
+        getByDate(selectedDate),
+        getMinuteStats(selectedDate),
+        getTotalCount(),
+      ]);
+      setRecords(dayRecords);
+      setMinutelyStats(stats);
+      setTotalCount(total);
+    } catch (err) {
+      console.error("Lỗi tải dữ liệu:", err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [selectedDate]);
 
   useEffect(() => {
     loadData();
-  }, [selectedDate]);
+  }, [loadData]);
 
-  const loadData = () => {
-    const dayRecords = HistoryStorage.getByDate(selectedDate);
-    setRecords(dayRecords);
-    
-    const stats = HistoryStorage.getMinuteStats(selectedDate);
-    setMinutelyStats(stats);
-    
-    setTotalCount(HistoryStorage.getCount());
-  };
-
-  const handleExportCSV = () => {
-    const csv = HistoryStorage.exportCSV();
-    const blob = new Blob([csv], { type: "text/csv" });
+  const handleExportCSV = async () => {
+    const csv = await exportCSV(selectedDate);
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `sensor-history-${format(new Date(), "yyyy-MM-dd-HHmmss")}.csv`;
+    a.download = `sensor-history-${format(selectedDate, "yyyy-MM-dd")}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   };
 
-  const handleClearHistory = () => {
-    if (confirm("Bạn có chắc chắn muốn xóa toàn bộ lịch sử?")) {
-      HistoryStorage.clear();
+  const handleClearHistory = async () => {
+    if (confirm("Bạn có chắc chắn muốn xóa TOÀN BỘ lịch sử trên Supabase? Không thể khôi phục!")) {
+      await clearAll();
       loadData();
     }
   };
@@ -63,7 +73,7 @@ export default function LichSuPage() {
     <div className="space-y-6">
       <PageHeader
         title="Lịch sử"
-        description="Xem lại dữ liệu cảm biến đã ghi nhận."
+        description="Dữ liệu cảm biến lưu trữ trên Supabase PostgreSQL."
       />
 
       {/* Controls */}
@@ -90,18 +100,22 @@ export default function LichSuPage() {
 
             <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
               <Database className="h-4 w-4" />
-              <span>{records.length} bản ghi ngày này</span>
-              <span className="text-xs">({totalCount} tổng)</span>
+              <span>{isLoading ? "Đang tải..." : `${records.length} bản ghi ngày này`}</span>
+              <span className="text-xs">({totalCount} tổng trên Supabase)</span>
             </div>
 
             <div className="ml-auto flex gap-2">
-              <Button variant="outline" size="sm" onClick={handleExportCSV}>
+              <Button variant="outline" size="sm" onClick={loadData} disabled={isLoading}>
+                <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? "animate-spin" : ""}`} />
+                Làm mới
+              </Button>
+              <Button variant="outline" size="sm" onClick={handleExportCSV} disabled={isLoading || records.length === 0}>
                 <Download className="h-4 w-4 mr-2" />
                 Xuất CSV
               </Button>
               <Button variant="outline" size="sm" onClick={handleClearHistory}>
                 <Trash2 className="h-4 w-4 mr-2" />
-                Xóa lịch sử
+                Xóa tất cả
               </Button>
             </div>
           </div>
@@ -456,7 +470,7 @@ export default function LichSuPage() {
                   {records.slice(0, 100).map((record) => (
                     <TableRow key={record.id} className="border-b border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50">
                       <TableCell className="font-mono text-xs text-slate-900 dark:text-slate-100">
-                        {format(new Date(record.timestamp), "HH:mm:ss")}
+                        {format(new Date(record.created_at), "HH:mm:ss")}
                       </TableCell>
                       <TableCell className="text-right text-slate-900 dark:text-slate-100">
                         {record.temp !== null ? `${record.temp.toFixed(1)}°C` : "N/A"}
